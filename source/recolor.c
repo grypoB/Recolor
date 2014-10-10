@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
@@ -26,12 +26,17 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
+void scan_int(int *nb); // scan a number and exit on failure
+void scan_float(float *nb);
+float* init_tab(int size); // allocate memory for a table
 
 
 //-------------------------------------------------------------------
 int main(void)
 {
-    bool verbose = 0;
+    int i=0, j=0;
+
+    int verbose = -1;
     int nbR = 0; //nombre de couleur de recoloriage
     float *couleurR = NULL; // tablau des couleur de recoloriage
     float *seuil = NULL; // seuils utilisés
@@ -43,12 +48,86 @@ int main(void)
     int couleur_max = 0;
     float *pixel = NULL;
 
+    scan_int(&verbose);
+
+    if (verbose) printf("Nombre de couleurs de recoloriage : ");
+    scan_int(&nbR);
+    if (nbR<2 || nbR>255)
+        erreur_nbR(nbR);
+
+    couleurR = init_tab(3*(nbR+1)*sizeof(float));
+    for (i=0 ; i<3 ; i++) // met la premiere couleur a NOIR
+        couleurR[i] = 0;
+
+    if (verbose) printf("Entrer celles-ci (format RGB variant de 0 à 1) :\n");
+    for (i=1 ; i<nbR+1 ; i++) // scan color
+    {
+        for (j=0 ; j<3 ; j++) // scan RBG components
+        {
+            scan_float(&couleurR[i*3+j]);
+            if (couleurR[i*3+j]<0 || couleurR[i*3+j]>1)
+                erreur_couleur(couleurR[i*3+j]);
+        }
+    }
+
+    seuil = init_tab((nbR-1)*sizeof(float));
+
+    if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
+    for (i=0 ; i<nbR-1 ; i++)
+    {
+        scan_float(&seuil[i]);
+        if (seuil[i]<=0 || seuil[i]>=1)
+            erreur_seuil(seuil[i]);
+        if (i>=1)
+        {
+            if (seuil[i] < seuil[i-1])
+                erreur_seuil_non_croissant(seuil[i], seuil[i-1]);
+            else if (seuil[i]-seuil[i-1] < TOLERANCE_SEUIL)
+                erreur_seuil_non_distinct(seuil[i], seuil[i-1]);
+        }
+    }
+
+    if (verbose) printf("Nombre de filtrage : ");
+    scan_int(&nbF);
+    //TODO add check for nbF (nbF<1)
 
 
-
-
-
+    free(couleurR);
+    free(seuil);
 	return EXIT_SUCCESS;
+}
+
+// Scan an integer from the default input and exit on failure
+void scan_int(int *nb)
+{
+    if (scanf("%d", nb) != 1)
+    {
+        printf("Input failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Scan a float form the default input and exit on failure
+void scan_float(float *nb)
+{
+    if (scanf("%f", nb) != 1)
+    {
+        printf("Input failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// allocate memory to a pointer
+float* init_tab(int size)
+{
+    float *pointer = NULL;
+    pointer = malloc(size);
+    if (pointer == NULL)
+    {
+        printf("Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    return pointer;
 }
 
 
@@ -106,5 +185,3 @@ static void erreur_seuil_non_distinct(float s1, float s2)
 		   
 	exit(EXIT_FAILURE);
 }
-
-
