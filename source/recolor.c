@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
@@ -30,8 +31,24 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 //-------------------------------------------------------------------
 int main(void)
 {
-	
-	return EXIT_SUCCESS ;
+    bool verbose = 0;
+    int nbR = 0; //nombre de couleur de recoloriage
+    float *couleurR = NULL; // tablau des couleur de recoloriage
+    float *seuil = NULL; // seuils utilisés
+    int nbF = 0; // nombre de filtrage
+
+    //relatif à l'image
+    int nbC = 0; // nombre de colonne
+    int nbL = 0; // nombre de ligne
+    int couleur_max = 0;
+    float *pixel = NULL;
+
+
+
+
+
+
+	return EXIT_SUCCESS;
 }
 
 
