@@ -1,9 +1,9 @@
 /*
 	File : recolor.c
-	Nom    :
-	Prenom :
-	CAMIPRO:
-	Date   : 
+	Nom    : Devienne
+	Prenom : Alexandre
+	CAMIPRO: 246865
+	Date   : 2014-10-10 
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
