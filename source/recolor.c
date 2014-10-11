@@ -3,7 +3,7 @@
 	Nom    : Devienne
 	Prenom : Alexandre
 	CAMIPRO: 246865
-	Date   : 2014-10-10 
+	Date   : 2014-10-11 
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 //#include <stdbool.h>
+#include <math.h>
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
@@ -26,6 +27,7 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
+float seuillage(int pixel_RGB[], int max);
 void scan_int(int *nb); // scan a number and exit on failure
 void scan_float(float *nb);
 float* init_tab(int size); // allocate memory for a table
@@ -34,7 +36,7 @@ float* init_tab(int size); // allocate memory for a table
 //-------------------------------------------------------------------
 int main(void)
 {
-    int i=0, j=0;
+    int i=0, j=0, k=0;
 
     int verbose = -1;
     int nbR = 0; //nombre de couleur de recoloriage
@@ -46,7 +48,8 @@ int main(void)
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
     int couleur_max = 0;
-    float *pixel = NULL;
+    float *pixels = NULL;
+    int pixel_RGB[3] = {0};
 
     scan_int(&verbose);
 
@@ -91,10 +94,45 @@ int main(void)
     scan_int(&nbF);
     //TODO add check for nbF (nbF<1)
 
+    if (verbose) printf("Entrer les informations de l'image en format PPM :\n");
+    scanf("P3");
+    scan_int(&nbC); //TODO check value
+    scan_int(&nbL); //TODO check value
+    scan_int(&couleur_max); //TODO check value
+    
+    pixels = init_tab(nbC*nbL*sizeof(float));
 
+    for (i=0 ; i<nbC ; i++)
+    {
+        for (j=0 ; j<nbL ; j++)
+        {
+            for (k=0 ; k<3 ; k++)
+            {
+                scan_int(&pixel_RGB[k]);
+            }
+            pixels[i*nbL+j] = seuillage(pixel_RGB, couleur_max);
+        }
+    }
+
+    correct();
+
+    free(pixels);
     free(couleurR);
     free(seuil);
 	return EXIT_SUCCESS;
+}
+
+
+float seuillage(int pixel_RGB[], int max)
+{
+    int i;
+    float result = 0;
+    
+    for(i=0 ; i<3 ; i++)
+        result += pow(pixel_RGB[i], 2);
+    result = sqrt(result) / (sqrt(3) * max);
+
+    return result; 
 }
 
 // Scan an integer from the default input and exit on failure
