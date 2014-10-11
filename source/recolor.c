@@ -28,9 +28,12 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 
 
 float seuillage(int pixel_RGB[], int max);
+
+//TODO, maybe, change input method to return a value, and not a void
 void scan_string(char string[]); // scan a number and exit on failure
 void scan_int(int *nb);
 void scan_float(float *nb);
+//TODO not consistent : no sizeof in the 2D version
 float* init_tab(int size); // allocate memory for a table
 float** init_2D_tab(int x, int y); // allocate memory for a 2D table
 
@@ -41,18 +44,18 @@ int main(void)
     int i=0, j=0, k=0;
 
     int verbose = -1;
-    int nbR = 0; //nombre de couleur de recoloriage
-    float **couleurR = NULL; // tablau des couleur de recoloriage
-    float *seuil = NULL; // seuils utilisés
-    int nbF = 0; // nombre de filtrage
 
-    //relatif à l'image
-    char format[2] = {0};
+    int nbR = 0; // nombre de couleurs de recoloriage
+    int nbF = 0; // nombre de filtrages
+    float **couleurs = NULL; // tablau des couleur de recoloriage
+    float *seuils = NULL; // seuils utilisés
+
+    char format[2] = {0}; //TODO change name and check method
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
-    int couleur_max = 0;
-    float **pixels = NULL;
+    int couleur_max = 0; //TODO change variable name
     int pixel_RGB[3] = {0};
+    float **image = NULL;
 
     scan_int(&verbose);
 
@@ -61,35 +64,35 @@ int main(void)
     if (nbR<2 || nbR>255)
         erreur_nbR(nbR);
 
-    couleurR = init_2D_tab(nbR+1, 3);
+    couleurs = init_2D_tab(nbR+1, 3);
     for (i=0 ; i<3 ; i++) // met la premiere couleur a NOIR
-        couleurR[0][i] = 0;
+        couleurs[0][i] = 0;
 
     if (verbose) printf("Entrer celles-ci (format RGB variant de 0 à 1) :\n");
     for (i=1 ; i<nbR+1 ; i++) // scan color
     {
         for (j=0 ; j<3 ; j++) // scan RBG components
         {
-            scan_float(&couleurR[i][j]);
-            if (couleurR[i][j]<0 || couleurR[i][j]>1)
-                erreur_couleur(couleurR[i][j]);
+            scan_float(&couleurs[i][j]);
+            if (couleurs[i][j]<0 || couleurs[i][j]>1)
+                erreur_couleur(couleurs[i][j]);
         }
     }
 
-    seuil = init_tab((nbR-1)*sizeof(float));
+    seuils = init_tab((nbR-1)*sizeof(float));
 
     if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
     for (i=0 ; i<nbR-1 ; i++)
     {
-        scan_float(&seuil[i]);
-        if (seuil[i]<=0 || seuil[i]>=1)
-            erreur_seuil(seuil[i]);
+        scan_float(&seuils[i]);
+        if (seuils[i]<=0 || seuils[i]>=1)
+            erreur_seuil(seuils[i]);
         if (i>=1)
         {
-            if (seuil[i] < seuil[i-1])
-                erreur_seuil_non_croissant(seuil[i-1], seuil[i]);
-            else if (seuil[i]-seuil[i-1] < TOLERANCE_SEUIL)
-                erreur_seuil_non_distinct(seuil[i-1], seuil[i]);
+            if (seuils[i] < seuils[i-1])
+                erreur_seuil_non_croissant(seuils[i-1], seuils[i]);
+            else if (seuils[i]-seuils[i-1] < TOLERANCE_SEUIL)
+                erreur_seuil_non_distinct(seuils[i-1], seuils[i]);
         }
     }
 
@@ -104,7 +107,7 @@ int main(void)
     scan_int(&nbL); //TODO check value
     scan_int(&couleur_max); //TODO check value
     
-    pixels = init_2D_tab(nbC, nbL);
+    image = init_2D_tab(nbC, nbL);
 
     for (i=0 ; i<nbC ; i++)
     {
@@ -114,15 +117,15 @@ int main(void)
             {
                 scan_int(&pixel_RGB[k]);
             }
-            pixels[i][j] = seuillage(pixel_RGB, couleur_max);
+            image[i][j] = seuillage(pixel_RGB, couleur_max);
         }
     }
 
     correct();
 
-    free(pixels);
-    free(couleurR);
-    free(seuil);
+    free(image);
+    free(couleurs);
+    free(seuils);
 	return EXIT_SUCCESS;
 }
 
