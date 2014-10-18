@@ -79,15 +79,19 @@ int main(void)
         }
     }
 
-    seuils = init_tab((nbR-1)*sizeof(float));
+    seuils = init_float_tab(nbR-1);
 
     if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
     for (i=0 ; i<nbR-1 ; i++)
     {
         scan_float(&seuils[i]);
-        if (seuils[i]<=0 || seuils[i]>=1)
+        if (seuils[i]<0 || seuils[i]>1)
             erreur_seuil(seuils[i]);
-        if (i>=1)
+        else if (seuils[i]<TOLERANCE_SEUIL) // different from seuil 0 // TODO check if those 2 test are needed
+            erreur_seuil_non_distinct(0, seuils[i]);
+        else if (seuils[i]>1-TOLERANCE_SEUIL) // different from seuil 1
+            erreur_seuil_non_distinct(seuils[i], 1);
+        else if (i>=1)
         {
             if (seuils[i] < seuils[i-1])
                 erreur_seuil_non_croissant(seuils[i-1], seuils[i]);
