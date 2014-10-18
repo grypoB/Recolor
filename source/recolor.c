@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <math.h> // for sqrt() function
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
@@ -27,21 +27,15 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-float normalize(int RGB_values[], int max);
-//TODO : static functions ?
-
-// input function, act as scanf, but checks if the return value is correct //TODO check if this is authorized
-// params : pointer to var
-void scan_string(char string[]);
-void scan_int(int *nb_adress);
-void scan_float(float *nb_adress);
+static float normalize(int RGB_values[], int max);
 
 
-// memory allocation function
-// params : number of cell
-// output : pointer
-float* init_float_tab(int size);
-float** init_2D_float_tab(int x, int y);
+/* memory allocation function
+ * params : number of cell
+ * output : pointer
+ */
+static float*  init_float_tab(int size);
+static float** init_2D_float_tab(int x, int y);
 
 
 //-------------------------------------------------------------------
@@ -63,10 +57,10 @@ int main(void)
     int RGB_values[3] = {0}; //TODO check if var name respects convention
     float **image = NULL;
 
-    scan_int(&verbose);
+    scanf("%d", &verbose);
 
     if (verbose) printf("Nombre de couleurs de recoloriage : ");
-    scan_int(&nbR);
+    scanf("%d", &nbR);
     if (nbR<2 || nbR>255)
         erreur_nbR(nbR);
 
@@ -79,7 +73,7 @@ int main(void)
     {
         for (j=0 ; j<3 ; j++) // scan RBG components
         {
-            scan_float(&couleurs[i][j]);
+            scanf("%f", &couleurs[i][j]);
             if (couleurs[i][j]<0 || couleurs[i][j]>1)
                 erreur_couleur(couleurs[i][j]);
         }
@@ -90,7 +84,7 @@ int main(void)
     if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
     for (i=0 ; i<nbR-1 ; i++)
     {
-        scan_float(&seuils[i]);
+        scanf("%f", &seuils[i]);
         if (seuils[i]<=0 || seuils[i]>=1)
             erreur_seuil(seuils[i]);
         else if (seuils[i]<TOLERANCE_SEUIL) // different from seuil 0 // TODO check if those 2 test are needed
@@ -107,13 +101,13 @@ int main(void)
     }
 
     if (verbose) printf("Nombre de filtrage : ");
-    scan_int(&nbF); // nbF is assumed correct
+    scanf("%d", &nbF); // nbF is assumed correct
 
     if (verbose) printf("Entrer les informations de l'image en format PPM :\n");
-    scan_string(format); // all values are assumed correct from this point
-    scan_int(&nbC);
-    scan_int(&nbL);
-    scan_int(&couleur_max);
+    scanf("%s", format); // all values are assumed correct from this point
+    scanf("%d", &nbC);
+    scanf("%d", &nbL);
+    scanf("%d", &couleur_max);
     
     image = init_2D_float_tab(nbC, nbL);
 
@@ -123,7 +117,7 @@ int main(void)
         {
             for (k=0 ; k<3 ; k++)
             {
-                scan_int(&RGB_values[k]);
+                scanf("%d", &RGB_values[k]);
             }
             image[i][j] = normalize(RGB_values, couleur_max);
         }
@@ -138,7 +132,7 @@ int main(void)
 }
 
 
-float normalize(int RGB_values[], int max)
+static float normalize(int RGB_values[], int max)
 {
     int i;
     float result = 0;
@@ -152,41 +146,8 @@ float normalize(int RGB_values[], int max)
 }
 
 
-// Scan a string from the default input and exit on failure
-void scan_string(char string[])
-{
-    if (scanf("%s", string) != 1)
-    {
-        printf("Input failed\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-
-// Scan an integer from the default input and exit on failure
-void scan_int(int *nb_adress)
-{
-    if (scanf("%d", nb_adress) != 1)
-    {
-        printf("Input failed\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-
-// Scan a float form the default input and exit on failure
-void scan_float(float *nb_adress)
-{
-    if (scanf("%f", nb_adress) != 1)
-    {
-        printf("Input failed\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-
 // Allocate memory for a 1D tab
-float* init_float_tab(int size)
+static float* init_float_tab(int size)
 {
     float *pointer = NULL;
     pointer = (float *) malloc(size*sizeof(float));
@@ -200,7 +161,7 @@ float* init_float_tab(int size)
 
 
 // Allocate memory for a 2D tab
-float** init_2D_float_tab(int x, int y)
+static float** init_2D_float_tab(int x, int y)
 {
     int i;
     float **pointer = NULL;
