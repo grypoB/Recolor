@@ -27,15 +27,21 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-float seuillage(int pixel_RGB[], int max);
+float normalize(int pixel_RGB[], int max);
 
-//TODO, maybe, change input method to return a value, and not a void
-void scan_string(char string[]); // scan a number and exit on failure
+
+// input function, act as scanf, but checks if the return value is correct
+// params : pointer to var
+void scan_string(char string[]);
 void scan_int(int *nb);
 void scan_float(float *nb);
-//TODO not consistent : no sizeof in the 2D version
-float* init_tab(int size); // allocate memory for a table
-float** init_2D_tab(int x, int y); // allocate memory for a 2D table
+
+
+// memory allocation function
+// params : number of cell
+// output : pointer
+float* init_float_tab(int size);
+float** init_2D_float_tab(int x, int y);
 
 
 //-------------------------------------------------------------------
@@ -50,7 +56,7 @@ int main(void)
     float **couleurs = NULL; // tablau des couleur de recoloriage
     float *seuils = NULL; // seuils utilisés
 
-    char format[2] = {0}; //TODO change name and check method
+    char format[3] = {0}; //TODO change name and check method
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
     int couleur_max = 0; //TODO change variable name
@@ -64,7 +70,7 @@ int main(void)
     if (nbR<2 || nbR>255)
         erreur_nbR(nbR);
 
-    couleurs = init_2D_tab(nbR+1, 3);
+    couleurs = init_2D_float_tab(nbR+1, 3);
     for (i=0 ; i<3 ; i++) // met la premiere couleur a NOIR
         couleurs[0][i] = 0;
 
@@ -101,17 +107,15 @@ int main(void)
     }
 
     if (verbose) printf("Nombre de filtrage : ");
-    scan_int(&nbF);
-    //TODO add check for nbF (nbF<1)
+    scan_int(&nbF); // nbF is assumed correct
 
     if (verbose) printf("Entrer les informations de l'image en format PPM :\n");
-    scan_string(format); // TODO check value "P3"
-
-    scan_int(&nbC); //TODO check value
-    scan_int(&nbL); //TODO check value
-    scan_int(&couleur_max); //TODO check value
+    scan_string(format); // all values are assumed correct from this point
+    scan_int(&nbC);
+    scan_int(&nbL);
+    scan_int(&couleur_max);
     
-    image = init_2D_tab(nbC, nbL);
+    image = init_2D_float_tab(nbC, nbL);
 
     for (i=0 ; i<nbC ; i++)
     {
@@ -121,7 +125,7 @@ int main(void)
             {
                 scan_int(&pixel_RGB[k]);
             }
-            image[i][j] = seuillage(pixel_RGB, couleur_max);
+            image[i][j] = normalize(pixel_RGB, couleur_max);
         }
     }
 
@@ -134,7 +138,7 @@ int main(void)
 }
 
 
-float seuillage(int pixel_RGB[], int max)
+float normalize(int pixel_RGB[], int max)
 {
     int i;
     float result = 0;
@@ -143,10 +147,11 @@ float seuillage(int pixel_RGB[], int max)
         result += pow(pixel_RGB[i], 2);
     result = sqrt(result) / (sqrt(3) * max);
 
-    return result; 
+    return result;
 }
 
-// Scan a char from the default input and exit on failure
+
+// Scan a string from the default input and exit on failure
 void scan_string(char string[])
 {
     if (scanf("%s", string) != 1)
@@ -155,6 +160,7 @@ void scan_string(char string[])
         exit(EXIT_FAILURE);
     }
 }
+
 
 // Scan an integer from the default input and exit on failure
 void scan_int(int *nb)
@@ -166,6 +172,7 @@ void scan_int(int *nb)
     }
 }
 
+
 // Scan a float form the default input and exit on failure
 void scan_float(float *nb)
 {
@@ -176,11 +183,12 @@ void scan_float(float *nb)
     }
 }
 
-// allocate memory to a pointer
-float* init_tab(int size)
+
+// Allocate memory for a 1D tab
+float* init_float_tab(int size)
 {
     float *pointer = NULL;
-    pointer = (float *) malloc(size);
+    pointer = (float *) malloc(size*sizeof(float));
     if (pointer == NULL)
     {
         printf("Memory allocation failed\n");
@@ -189,8 +197,9 @@ float* init_tab(int size)
     return pointer;
 }
 
-// allocate memory for a 2 dimension tab
-float** init_2D_tab(int x, int y)
+
+// Allocate memory for a 2D tab
+float** init_2D_float_tab(int x, int y)
 {
     int i;
     float **pointer = NULL;
@@ -204,11 +213,12 @@ float** init_2D_tab(int x, int y)
 
     for (i=0 ; i<x ; i++)
     {
-        pointer[i] = init_tab(y*sizeof(float));
+        pointer[i] = init_float_tab(y);
     }
 
     return pointer;
 }
+
 
 //---------------------------------------------------------------------
 // Fonctions prédéfinies pour indiquer si les données sont correctes
