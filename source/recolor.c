@@ -3,7 +3,7 @@
 	Nom    : Devienne
 	Prenom : Alexandre
 	CAMIPRO: 246865
-	Date   : 2014-10-11 
+	Date   : 2014-10-18 
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
@@ -12,11 +12,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <stdbool.h>
 #include <math.h>
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
+//TODO add MIN=0 and MAX_SEUIL=1 if i'm using them in th code
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
 static void correct(void);
@@ -27,14 +27,14 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-float normalize(int pixel_RGB[], int max);
+float normalize(int RGB_values[], int max);
 
 
-// input function, act as scanf, but checks if the return value is correct
+// input function, act as scanf, but checks if the return value is correct //TODO check if this is authorized
 // params : pointer to var
 void scan_string(char string[]);
-void scan_int(int *nb);
-void scan_float(float *nb);
+void scan_int(int *nb_adress);
+void scan_float(float *nb_adress);
 
 
 // memory allocation function
@@ -56,11 +56,11 @@ int main(void)
     float **couleurs = NULL; // tablau des couleur de recoloriage
     float *seuils = NULL; // seuils utilisés
 
-    char format[3] = {0}; //TODO change name and check method
+    char format[3] = {0}; 
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
     int couleur_max = 0; //TODO change variable name
-    int pixel_RGB[3] = {0};
+    int RGB_values[3] = {0}; //TODO check if var name respects convention
     float **image = NULL;
 
     scan_int(&verbose);
@@ -71,10 +71,10 @@ int main(void)
         erreur_nbR(nbR);
 
     couleurs = init_2D_float_tab(nbR+1, 3);
-    for (i=0 ; i<3 ; i++) // met la premiere couleur a NOIR
+    for (i=0 ; i<3 ; i++) // init black color
         couleurs[0][i] = 0;
 
-    if (verbose) printf("Entrer celles-ci (format RGB variant de 0 à 1) :\n");
+    if (verbose) printf("Entrer celles-ci (format RGB normalisé) :\n");
     for (i=1 ; i<nbR+1 ; i++) // scan color
     {
         for (j=0 ; j<3 ; j++) // scan RBG components
@@ -123,9 +123,9 @@ int main(void)
         {
             for (k=0 ; k<3 ; k++)
             {
-                scan_int(&pixel_RGB[k]);
+                scan_int(&RGB_values[k]);
             }
-            image[i][j] = normalize(pixel_RGB, couleur_max);
+            image[i][j] = normalize(RGB_values, couleur_max);
         }
     }
 
@@ -138,13 +138,14 @@ int main(void)
 }
 
 
-float normalize(int pixel_RGB[], int max)
+float normalize(int RGB_values[], int max)
 {
     int i;
     float result = 0;
-    
+ 
     for(i=0 ; i<3 ; i++)
-        result += pow(pixel_RGB[i], 2);
+        result += pow(RGB_values[i], 2);
+
     result = sqrt(result) / (sqrt(3) * max);
 
     return result;
@@ -163,9 +164,9 @@ void scan_string(char string[])
 
 
 // Scan an integer from the default input and exit on failure
-void scan_int(int *nb)
+void scan_int(int *nb_adress)
 {
-    if (scanf("%d", nb) != 1)
+    if (scanf("%d", nb_adress) != 1)
     {
         printf("Input failed\n");
         exit(EXIT_FAILURE);
@@ -174,9 +175,9 @@ void scan_int(int *nb)
 
 
 // Scan a float form the default input and exit on failure
-void scan_float(float *nb)
+void scan_float(float *nb_adress)
 {
-    if (scanf("%f", nb) != 1)
+    if (scanf("%f", nb_adress) != 1)
     {
         printf("Input failed\n");
         exit(EXIT_FAILURE);
