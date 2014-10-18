@@ -28,7 +28,7 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 
 
 float normalize(int RGB_values[], int max);
-
+//TODO : static functions ?
 
 // input function, act as scanf, but checks if the return value is correct //TODO check if this is authorized
 // params : pointer to var
@@ -91,7 +91,7 @@ int main(void)
     for (i=0 ; i<nbR-1 ; i++)
     {
         scan_float(&seuils[i]);
-        if (seuils[i]<0 || seuils[i]>1)
+        if (seuils[i]<=0 || seuils[i]>=1)
             erreur_seuil(seuils[i]);
         else if (seuils[i]<TOLERANCE_SEUIL) // different from seuil 0 // TODO check if those 2 test are needed
             erreur_seuil_non_distinct(0, seuils[i]);
