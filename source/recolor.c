@@ -16,7 +16,15 @@
 
 // différence minimum entre 2 seuils successifs
 #define TOLERANCE_SEUIL 0.005f
-//TODO add MIN=0 and MAX_SEUIL=1 if i'm using them in th code
+#define MIN_SEUIL 0
+#define MAX_SEUIL 1
+
+#define MIN_RECOLOR_NB 2
+#define MAX_RECOLOR_NB 255
+
+#define COLOR_COMPONENTS 3 // number of components per color (RGB format)
+#define FORMAT_SIZE 3 // expected characters for the format string
+
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
 static void correct(void);
@@ -28,6 +36,7 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 
 
 static float normalize(int RGB_values[], int max);
+
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -55,30 +64,30 @@ int main(void)
     float **couleurs = NULL; // tablau des couleur de recoloriage
     float *seuils = NULL; // seuils utilisés
 
-    char format[3] = {0}; 
+    char format[FORMAT_SIZE] = {0}; 
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
     int couleur_max = 0; //TODO change variable name
-    int RGB_values[3] = {0}; //TODO check if var name respects convention
+    int RGB_values[COLOR_COMPONENTS] = {0}; //TODO check if var name respects convention
     float **image = NULL;
 
-    scanf("%d", &verbose);
+    scan_int(&verbose);
 
     if (verbose) printf("Nombre de couleurs de recoloriage : ");
-    scanf("%d", &nbR);
-    if (nbR<2 || nbR>255)
+    scan_int(&nbR);
+    if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
         erreur_nbR(nbR);
 
-    couleurs = init_2D_float_tab(nbR+1, 3);
-    for (i=0 ; i<3 ; i++) // init black color
+    couleurs = init_2D_float_tab(nbR+1, COLOR_COMPONENTS);
+    for (i=0 ; i<COLOR_COMPONENTS ; i++) // init black color
         couleurs[0][i] = 0;
 
     if (verbose) printf("Entrer celles-ci (format RGB normalisé) :\n");
     for (i=1 ; i<nbR+1 ; i++) // scan color
     {
-        for (j=0 ; j<3 ; j++) // scan RBG components
+        for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
-            scanf("%f", &couleurs[i][j]);
+            scan_float(&couleurs[i][j]);
             if (couleurs[i][j]<0 || couleurs[i][j]>1)
                 erreur_couleur(couleurs[i][j]);
         }
@@ -89,12 +98,12 @@ int main(void)
     if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
     for (i=0 ; i<nbR-1 ; i++)
     {
-        scanf("%f", &seuils[i]);
-        if (seuils[i]<=0 || seuils[i]>=1)
+        scan_float(&seuils[i]);
+        if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
             erreur_seuil(seuils[i]);
-        else if (seuils[i]<TOLERANCE_SEUIL) // different from seuil 0 // TODO check if those 2 test are needed
+        else if (seuils[i]<MIN_SEUIL+TOLERANCE_SEUIL)
             erreur_seuil_non_distinct(0, seuils[i]);
-        else if (seuils[i]>1-TOLERANCE_SEUIL) // different from seuil 1
+        else if (seuils[i]>MAX_SEUIL-TOLERANCE_SEUIL)
             erreur_seuil_non_distinct(seuils[i], 1);
         else if (i>=1)
         {
@@ -106,13 +115,13 @@ int main(void)
     }
 
     if (verbose) printf("Nombre de filtrage : ");
-    scanf("%d", &nbF); // nbF is assumed correct
+    scan_int(&nbF); // nbF is assumed correct
 
     if (verbose) printf("Entrer les informations de l'image en format PPM :\n");
-    scanf("%s", format); // all values are assumed correct from this point
-    scanf("%d", &nbC);
-    scanf("%d", &nbL);
-    scanf("%d", &couleur_max);
+    scan_string(format); // all values are assumed correct from this point
+    scan_int(&nbC);
+    scan_int(&nbL);
+    scan_int(&couleur_max);
     
     image = init_2D_float_tab(nbC, nbL);
 
@@ -120,9 +129,9 @@ int main(void)
     {
         for (j=0 ; j<nbL ; j++)
         {
-            for (k=0 ; k<3 ; k++)
+            for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
-                scanf("%d", &RGB_values[k]);
+                scan_int(&RGB_values[k]);
             }
             image[i][j] = normalize(RGB_values, couleur_max);
         }
@@ -142,10 +151,10 @@ static float normalize(int RGB_values[], int max)
     int i;
     float result = 0;
  
-    for(i=0 ; i<3 ; i++)
+    for(i=0 ; i<COLOR_COMPONENTS ; i++)
         result += pow(RGB_values[i], 2);
 
-    result = sqrt(result) / (sqrt(3) * max);
+    result = sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
 
     return result;
 }
