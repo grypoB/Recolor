@@ -29,12 +29,17 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 
 static float normalize(int RGB_values[], int max);
 
+// input function, act as scanf, but checks if the return value is correct 
+// params : pointer to var
+static void scan_string(char string[]);
+static void scan_int(int *nb_adress);
+static void scan_float(float *nb_adress);
 
-/* memory allocation function
- * params : number of cell
- * output : pointer
- */
-static float*  init_float_tab(int size);
+
+// memory allocation function
+// params : number of cell
+// output : pointer
+static float* init_float_tab(int size);
 static float** init_2D_float_tab(int x, int y);
 
 
@@ -143,6 +148,39 @@ static float normalize(int RGB_values[], int max)
     result = sqrt(result) / (sqrt(3) * max);
 
     return result;
+}
+
+
+// Scan a string from the default input and exit on failure
+static void scan_string(char string[])
+{
+    if (scanf("%s", string) != 1)
+    {
+        printf("Input failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+// Scan an integer from the default input and exit on failure
+static void scan_int(int *nb_adress)
+{
+    if (scanf("%d", nb_adress) != 1)
+    {
+        printf("Input failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+// Scan a float form the default input and exit on failure
+static void scan_float(float *nb_adress)
+{
+    if (scanf("%f", nb_adress) != 1)
+    {
+        printf("Input failed\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 
