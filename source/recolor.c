@@ -27,21 +27,20 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-float normalize(int RGB_values[], int max);
-//TODO : static functions ?
+static float normalize(int RGB_values[], int max);
 
-// input function, act as scanf, but checks if the return value is correct //TODO check if this is authorized
+// input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
-void scan_string(char string[]);
-void scan_int(int *nb_adress);
-void scan_float(float *nb_adress);
+static void scan_string(char string[]);
+static void scan_int(int *nb_adress);
+static void scan_float(float *nb_adress);
 
 
 // memory allocation function
 // params : number of cell
 // output : pointer
-float* init_float_tab(int size);
-float** init_2D_float_tab(int x, int y);
+static float* init_float_tab(int size);
+static float** init_2D_float_tab(int x, int y);
 
 
 //-------------------------------------------------------------------
@@ -138,7 +137,7 @@ int main(void)
 }
 
 
-float normalize(int RGB_values[], int max)
+static float normalize(int RGB_values[], int max)
 {
     int i;
     float result = 0;
@@ -153,7 +152,7 @@ float normalize(int RGB_values[], int max)
 
 
 // Scan a string from the default input and exit on failure
-void scan_string(char string[])
+static void scan_string(char string[])
 {
     if (scanf("%s", string) != 1)
     {
@@ -164,7 +163,7 @@ void scan_string(char string[])
 
 
 // Scan an integer from the default input and exit on failure
-void scan_int(int *nb_adress)
+static void scan_int(int *nb_adress)
 {
     if (scanf("%d", nb_adress) != 1)
     {
@@ -175,7 +174,7 @@ void scan_int(int *nb_adress)
 
 
 // Scan a float form the default input and exit on failure
-void scan_float(float *nb_adress)
+static void scan_float(float *nb_adress)
 {
     if (scanf("%f", nb_adress) != 1)
     {
@@ -186,7 +185,7 @@ void scan_float(float *nb_adress)
 
 
 // Allocate memory for a 1D tab
-float* init_float_tab(int size)
+static float* init_float_tab(int size)
 {
     float *pointer = NULL;
     pointer = (float *) malloc(size*sizeof(float));
@@ -200,7 +199,7 @@ float* init_float_tab(int size)
 
 
 // Allocate memory for a 2D tab
-float** init_2D_float_tab(int x, int y)
+static float** init_2D_float_tab(int x, int y)
 {
     int i;
     float **pointer = NULL;
