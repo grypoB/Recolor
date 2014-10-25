@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <math.h> // for sqrt() function
 
-// différence minimum entre 2 seuils successifs
-#define TOLERANCE_SEUIL 0.005f
+
+#define TOLERANCE_SEUIL 0.005f // différence minimum entre 2 seuils successifs
 #define MIN_SEUIL 0
 #define MAX_SEUIL 1
 
@@ -35,15 +35,14 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-static float normalize(int RGB_values[], int max);
+static float normalize(int RGB_values[], int max); //TODO change var name
 
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
-static void scan_string(char string[]);
 static void scan_int(int *nb_adress);
 static void scan_float(float *nb_adress);
-
+static void scan_string(char string[]);
 
 // memory allocation function
 // params : number of cell
@@ -71,9 +70,9 @@ int main(void)
     int RGB_values[COLOR_COMPONENTS] = {0}; //TODO check if var name respects convention
     float **image = NULL;
 
-    scan_int(&verbose);
+    scan_int(&verbose); //TODO scan value
 
-    if (verbose) printf("Nombre de couleurs de recoloriage : ");
+    if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
     scan_int(&nbR);
     if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
         erreur_nbR(nbR);
@@ -82,7 +81,7 @@ int main(void)
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init black color
         couleurs[0][i] = 0;
 
-    if (verbose) printf("Entrer celles-ci (format RGB normalisé) :\n");
+    if (verbose) printf("Entrer les %d couleurs de recoloriage (format RGB normalisé) :\n", nbR);
     for (i=1 ; i<nbR+1 ; i++) // scan color
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
@@ -95,7 +94,7 @@ int main(void)
 
     seuils = init_float_tab(nbR-1);
 
-    if (verbose) printf("Entrer la valeur des seuils à utilisés :\n");
+    if (verbose) printf("Entrer les %d seuils de recoloriage :\n", nbR-1);
     for (i=0 ; i<nbR-1 ; i++)
     {
         scan_float(&seuils[i]);
@@ -114,17 +113,21 @@ int main(void)
         }
     }
 
-    if (verbose) printf("Nombre de filtrage : ");
+    if (verbose) printf("Entrez le nombre de filtrage :\n");
     scan_int(&nbF); // nbF is assumed correct
 
-    if (verbose) printf("Entrer les informations de l'image en format PPM :\n");
-    scan_string(format); // all values are assumed correct from this point
+    // all values are assumed correct from this point
+    if (verbose) printf("Entrez le code du format de l'image :\n");
+    scan_string(format);
+    if (verbose) printf("Entrez les dimensions de l'image :\n");
     scan_int(&nbC);
     scan_int(&nbL);
+    if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
     scan_int(&couleur_max);
     
     image = init_2D_float_tab(nbC, nbL);
 
+    if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
     for (i=0 ; i<nbC ; i++)
     {
         for (j=0 ; j<nbL ; j++)
@@ -145,7 +148,7 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
-
+// From an RGB color, return a single normalize value
 static float normalize(int RGB_values[], int max)
 {
     int i;
@@ -160,23 +163,12 @@ static float normalize(int RGB_values[], int max)
 }
 
 
-// Scan a string from the default input and exit on failure
-static void scan_string(char string[])
-{
-    if (scanf("%s", string) != 1)
-    {
-        printf("Input failed\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-
 // Scan an integer from the default input and exit on failure
 static void scan_int(int *nb_adress)
 {
     if (scanf("%d", nb_adress) != 1)
     {
-        printf("Input failed\n");
+        printf("ERROR : Input failed (expected [%%d])\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -187,7 +179,22 @@ static void scan_float(float *nb_adress)
 {
     if (scanf("%f", nb_adress) != 1)
     {
-        printf("Input failed\n");
+        printf("ERROR : Input failed (expected [%%f])\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+// Scan a string from the default input and exit on failure
+/* RISKY
+ * If the string is longer than the memory allowed
+ * It will override values in the memory
+ */
+static void scan_string(char string[])
+{
+    if (scanf("%s", string) != 1)
+    {
+        printf("ERORO : Input failed (expected a string)\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -200,7 +207,7 @@ static float* init_float_tab(int size)
     pointer = (float *) malloc(size*sizeof(float));
     if (pointer == NULL)
     {
-        printf("Memory allocation failed\n");
+        printf("ERROR : Memory allocation failed (%lu bytes)\n", size*sizeof(float));
         exit(EXIT_FAILURE);
     }
     return pointer;
@@ -216,7 +223,7 @@ static float** init_2D_float_tab(int x, int y)
     pointer = (float**) malloc(x*sizeof(float*));
     if (pointer == NULL)
     {
-        printf("Memory allocation failed\n");
+        printf("ERROR : Memory allocation failed (%lu bytes)\n", x*sizeof(float*));
         exit(EXIT_FAILURE);
     }
 
