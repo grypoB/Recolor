@@ -15,7 +15,7 @@
 #include <math.h> // for sqrt() function
 
 
-#define TOLERANCE_SEUIL 0.005f // différence minimum entre 2 seuils successifs
+#define TOLERANCE_SEUIL 0.005f // différence min entre 2 seuils successifs
 #define MIN_SEUIL 0
 #define MAX_SEUIL 1
 
@@ -35,7 +35,7 @@ static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
 
-static float normalize(int RGB_values[], int max); //TODO change var name
+static float normalize(int rgb_values[], int max);
 
 
 // input function, act as scanf, but checks if the return value is correct 
@@ -60,17 +60,17 @@ int main(void)
 
     int nbR = 0; // nombre de couleurs de recoloriage
     int nbF = 0; // nombre de filtrages
-    float **couleurs = NULL; // tablau des couleur de recoloriage
-    float *seuils = NULL; // seuils utilisés
+    float *seuils    = NULL; // seuils utilisés
+    float **couleurs = NULL; // tableau des couleurs de recoloriage
 
-    char format[FORMAT_SIZE] = {0}; 
+    char format[FORMAT_SIZE] = {0};
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
-    int couleur_max = 0; //TODO change variable name
-    int RGB_values[COLOR_COMPONENTS] = {0}; //TODO check if var name respects convention
+    int intensite_max = 0; 
+    int rgb_values[COLOR_COMPONENTS] = {0};
     float **image = NULL;
 
-    scan_int(&verbose); //TODO scan value
+    scan_int(&verbose); // verbose value is assumed correct
 
     if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
     scan_int(&nbR);
@@ -81,7 +81,8 @@ int main(void)
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init black color
         couleurs[0][i] = 0;
 
-    if (verbose) printf("Entrer les %d couleurs de recoloriage (format RGB normalisé) :\n", nbR);
+    if (verbose) printf("Entrez les %d couleurs de recoloriage "
+                        "(format RGB normalisé) :\n", nbR);
     for (i=1 ; i<nbR+1 ; i++) // scan color
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
@@ -94,16 +95,16 @@ int main(void)
 
     seuils = init_float_tab(nbR-1);
 
-    if (verbose) printf("Entrer les %d seuils de recoloriage :\n", nbR-1);
+    if (verbose) printf("Entrez les %d seuils de recoloriage :\n", nbR-1);
     for (i=0 ; i<nbR-1 ; i++)
     {
         scan_float(&seuils[i]);
         if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
             erreur_seuil(seuils[i]);
         else if (seuils[i]<MIN_SEUIL+TOLERANCE_SEUIL)
-            erreur_seuil_non_distinct(0, seuils[i]);
+            erreur_seuil_non_distinct(MIN_SEUIL, seuils[i]);
         else if (seuils[i]>MAX_SEUIL-TOLERANCE_SEUIL)
-            erreur_seuil_non_distinct(seuils[i], 1);
+            erreur_seuil_non_distinct(seuils[i], MAX_SEUIL);
         else if (i>=1)
         {
             if (seuils[i] < seuils[i-1])
@@ -123,7 +124,7 @@ int main(void)
     scan_int(&nbC);
     scan_int(&nbL);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
-    scan_int(&couleur_max);
+    scan_int(&intensite_max);
     
     image = init_2D_float_tab(nbC, nbL);
 
@@ -134,9 +135,9 @@ int main(void)
         {
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
-                scan_int(&RGB_values[k]);
+                scan_int(&rgb_values[k]);
             }
-            image[i][j] = normalize(RGB_values, couleur_max);
+            image[i][j] = normalize(rgb_values, intensite_max);
         }
     }
 
@@ -148,18 +149,16 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
-// From an RGB color, return a single normalize value
-static float normalize(int RGB_values[], int max)
+// From an RGB color, return a single normalized value
+static float normalize(int rgb_values[], int max)
 {
     int i;
     float result = 0;
  
     for(i=0 ; i<COLOR_COMPONENTS ; i++)
-        result += pow(RGB_values[i], 2);
+        result += pow(rgb_values[i], 2);
 
-    result = sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
-
-    return result;
+    return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
 }
 
 
@@ -194,7 +193,7 @@ static void scan_string(char string[])
 {
     if (scanf("%s", string) != 1)
     {
-        printf("ERORO : Input failed (expected a string)\n");
+        printf("ERROR : Input failed (expected a string)\n");
         exit(EXIT_FAILURE);
     }
 }
