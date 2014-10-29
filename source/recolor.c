@@ -15,15 +15,19 @@
 #include <math.h> // for sqrt() function
 
 
-#define TOLERANCE_SEUIL 0.005f // différence min entre 2 seuils successifs
 #define MIN_SEUIL 0
 #define MAX_SEUIL 1
+#define TOLERANCE_SEUIL 0.005f // différence min entre 2 seuils successifs
 
+#define MIN_COLOR 0 // min/max value of a color (0 and 1 for normalize value)
+#define MAX_COLOR 1
 #define MIN_RECOLOR_NB 2
 #define MAX_RECOLOR_NB 255
-
 #define COLOR_COMPONENTS 3 // number of components per color (RGB format)
-#define FORMAT_SIZE 3 // expected characters for the format string
+
+#define BORDER_COLOR 0 // RGB normalized format for the border color
+
+#define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
@@ -34,9 +38,8 @@ static void erreur_seuil(float seuil);
 static void erreur_seuil_non_croissant(float s1, float s2);
 static void erreur_seuil_non_distinct(float s1, float s2);
 
-
+// from a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max);
-
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -66,7 +69,7 @@ int main(void)
     char format[FORMAT_SIZE] = {0};
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
-    int intensite_max = 0; 
+    int intensite_max = 0;
     int rgb_values[COLOR_COMPONENTS] = {0};
     float **image = NULL;
 
@@ -78,8 +81,8 @@ int main(void)
         erreur_nbR(nbR);
 
     couleurs = init_2D_float_tab(nbR+1, COLOR_COMPONENTS);
-    for (i=0 ; i<COLOR_COMPONENTS ; i++) // init black color
-        couleurs[0][i] = 0;
+    for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
+        couleurs[0][i] = BORDER_COLOR;
 
     if (verbose) printf("Entrez les %d couleurs de recoloriage "
                         "(format RGB normalisé) :\n", nbR);
@@ -88,7 +91,7 @@ int main(void)
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
             scan_float(&couleurs[i][j]);
-            if (couleurs[i][j]<0 || couleurs[i][j]>1)
+            if (couleurs[i][j]<MIN_COLOR || couleurs[i][j]>MAX_COLOR)
                 erreur_couleur(couleurs[i][j]);
         }
     }
@@ -149,13 +152,13 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
-// From an RGB color, return a single normalized value
+// From a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max)
 {
     int i;
     float result = 0;
  
-    for(i=0 ; i<COLOR_COMPONENTS ; i++)
+    for (i=0 ; i<COLOR_COMPONENTS ; i++)
         result += pow(rgb_values[i], 2);
 
     return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
