@@ -3,7 +3,7 @@
 	Nom    : Devienne
 	Prenom : Alexandre
 	CAMIPRO: 246865
-	Date   : 2014-10-18 
+	Date   : 2014-10-29
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
@@ -50,7 +50,7 @@ static void scan_string(char string[]);
 // memory allocation function
 // params : number of cell
 // output : pointer
-static float* init_float_tab(int size);
+static float*  init_float_tab(int size);
 static float** init_2D_float_tab(int x, int y);
 
 
@@ -71,7 +71,7 @@ int main(void)
     int nbL = 0; // nombre de ligne
     int intensite_max = 0;
     int rgb_values[COLOR_COMPONENTS] = {0};
-    float **image = NULL;
+    float **image = NULL; // 2D array of the image's pixel
 
     scan_int(&verbose); // verbose value is assumed correct
 
@@ -99,7 +99,7 @@ int main(void)
     seuils = init_float_tab(nbR-1);
 
     if (verbose) printf("Entrez les %d seuils de recoloriage :\n", nbR-1);
-    for (i=0 ; i<nbR-1 ; i++)
+    for (i=0 ; i<nbR-1 ; i++) // scan seuils
     {
         scan_float(&seuils[i]);
         if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
