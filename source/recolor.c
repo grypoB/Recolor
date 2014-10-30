@@ -3,7 +3,7 @@
 	Nom    : Devienne
 	Prenom : Alexandre
 	CAMIPRO: 246865
-	Date   : 2014-10-29
+	Date   : 2014-10-30
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
@@ -19,7 +19,7 @@
 #define MAX_SEUIL 1
 #define TOLERANCE_SEUIL 0.005f // différence min entre 2 seuils successifs
 
-#define MIN_COLOR 0 // min/max value of a color (0 and 1 for normalize value)
+#define MIN_COLOR 0 // min/max value of a color (0 and 1 for normalized value)
 #define MAX_COLOR 1
 #define MIN_RECOLOR_NB 2
 #define MAX_RECOLOR_NB 255
@@ -53,6 +53,8 @@ static void scan_string(char string[]);
 static float*  init_float_tab(int size);
 static float** init_2D_float_tab(int x, int y);
 
+// Free a 2D tab (allocated by init_2D_float_tab)
+static void free_2D_float_tab(float **pointer, int x);
 
 //-------------------------------------------------------------------
 int main(void)
@@ -146,11 +148,12 @@ int main(void)
 
     correct();
 
-    free(image);
-    free(couleurs);
     free(seuils);
+    free_2D_float_tab(image, nbC);
+    free_2D_float_tab(couleurs, nbR+1);
 	return EXIT_SUCCESS;
 }
+
 
 // From a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max)
@@ -176,7 +179,7 @@ static void scan_int(int *nb_adress)
 }
 
 
-// Scan a float form the default input and exit on failure
+// Scan a float from the default input and exit on failure
 static void scan_float(float *nb_adress)
 {
     if (scanf("%f", nb_adress) != 1)
@@ -190,7 +193,7 @@ static void scan_float(float *nb_adress)
 // Scan a string from the default input and exit on failure
 /* RISKY
  * If the string is longer than the memory allowed
- * It will override values in the memory
+ * it will override values in the memory
  */
 static void scan_string(char string[])
 {
@@ -206,12 +209,15 @@ static void scan_string(char string[])
 static float* init_float_tab(int size)
 {
     float *pointer = NULL;
+
     pointer = (float *) malloc(size*sizeof(float));
+
     if (pointer == NULL)
     {
         printf("ERROR : Memory allocation failed (%lu bytes)\n", size*sizeof(float));
         exit(EXIT_FAILURE);
     }
+
     return pointer;
 }
 
@@ -235,6 +241,19 @@ static float** init_2D_float_tab(int x, int y)
     }
 
     return pointer;
+}
+
+// Free the memory from a 2D tab (initialized by init_2D_tab())
+static void free_2D_float_tab(float **pointer, int x)
+{
+    int i;
+
+    for (i=0 ; i<x ; i++)
+    {
+        free(pointer[i]);
+    }
+
+    free(pointer);
 }
 
 
