@@ -1,9 +1,9 @@
 /*
 	File : recolor.c
 	Nom    : Devienne
-	Prenom : Alexandre
+	Prenom : Alexandre Andre Steven
 	CAMIPRO: 246865
-	Date   : 2014-10-30
+	Date   : 2014-10-31
 	Version code: 1.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
@@ -53,7 +53,7 @@ int main(void)
     int intensite_max = 0;
     int rgb_values[COLOR_COMPONENTS] = {0};
 
-    /* Variable lenght array
+    /* Variable lenght arrays
     float seuils[];
     float couleurs[][];
     float image[][];
@@ -129,11 +129,11 @@ int main(void)
             }
             //image[i][j] = normalize(rgb_values, intensite_max);
         }
-   }
+    }
 
     correct();
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 
