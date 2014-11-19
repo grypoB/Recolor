@@ -142,7 +142,9 @@ int main(void)
             {
                 scan_int(&rgb_values[k]);
             }
+            
             image[i][j] = normalize(rgb_values, intensite_max);
+            image[i][j] = seuillage(seuils, nbR+1, image[i][j]);
         }
     }
 
@@ -165,6 +167,25 @@ static float normalize(int rgb_values[], int max)
         result += pow(rgb_values[i], 2);
 
     return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
+}
+
+
+static int seuillage(float seuils[nbS], int nbS, int val)
+{
+    int i;
+    
+    if (val < seuils[nbS/2])
+    {
+        if (nbS/2==0)
+            return 1;
+        else
+            return seuillage(seuils, nbS/2, val);
+    }
+    else
+    {
+        return nbS/2 + seuillage(seuils+nbS/2, nbS-nbS/2, val);
+    }
+    
 }
 
 
