@@ -44,7 +44,7 @@ static float normalize(int rgb_values[], int max);
 // seuillage function in logarithm complexity
 // params : sorted array, size of array, val to look for
 // output : first x such as val > array[x]
-static int seuillage(float array[], int size, float val)
+static int seuillage(float array[], int size, float val);
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -55,10 +55,15 @@ static void scan_string(char string[]);
 // memory allocation function
 // params : number of cell
 // output : pointer
+static int*  init_int_tab(int size);
+static int** init_2D_int_tab(int x, int y);
 static float*  init_float_tab(int size);
 static float** init_2D_float_tab(int x, int y);
 
+void error_allocation(long unsigned int byte);
+
 // Free a 2D tab (allocated by init_2D_float_tab)
+static void free_2D_int_tab(int **pointer, int x);
 static void free_2D_float_tab(float **pointer, int x);
 
 //-------------------------------------------------------------------
@@ -78,7 +83,7 @@ int main(void)
     int nbL = 0; // nombre de ligne
     int intensite_max = 0;
     int rgb_values[COLOR_COMPONENTS] = {0};
-    float **image = NULL; // 2D array of the image's pixel
+    int **image = NULL; // 2D array of the image's pixel
 
     scan_int(&verbose); // verbose value is assumed correct
 
@@ -135,8 +140,8 @@ int main(void)
     scan_int(&nbL);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
     scan_int(&intensite_max);
-    
-    image = init_2D_float_tab(nbC, nbL);
+
+    image = init_2D_int_tab(nbC, nbL);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
     for (i=0 ; i<nbC ; i++)
@@ -147,16 +152,15 @@ int main(void)
             {
                 scan_int(&rgb_values[k]);
             }
-            
-            image[i][j] = normalize(rgb_values, intensite_max);
-            image[i][j] = 1 + seuillage(seuils, nbR+1, image[i][j]);
+            // seuillage : add 1 because MIN_SEUIL is not in array seuils
+            image[i][j] = 1 + seuillage(seuils, nbR+1, normalize(rgb_values, intensite_max));
         }
     }
 
     correct();
 
     free(seuils);
-    free_2D_float_tab(image, nbC);
+    free_2D_int_tab(image, nbC);
     free_2D_float_tab(couleurs, nbR+1);
 	return EXIT_SUCCESS;
 }
@@ -243,8 +247,7 @@ static float* init_float_tab(int size)
 
     if (pointer == NULL)
     {
-        printf("ERROR : Memory allocation failed (%lu bytes)\n", size*sizeof(float));
-        exit(EXIT_FAILURE);
+        error_allocation(size*sizeof(float));
     }
 
     return pointer;
@@ -260,8 +263,7 @@ static float** init_2D_float_tab(int x, int y)
     pointer = (float**) malloc(x*sizeof(float*));
     if (pointer == NULL)
     {
-        printf("ERROR : Memory allocation failed (%lu bytes)\n", x*sizeof(float*));
-        exit(EXIT_FAILURE);
+        error_allocation(x*sizeof(float*));
     }
 
     for (i=0 ; i<x ; i++)
@@ -271,6 +273,44 @@ static float** init_2D_float_tab(int x, int y)
 
     return pointer;
 }
+
+
+// Allocate memory for a 1D tab
+static int* init_int_tab(int size)
+{
+    int *pointer = NULL;
+
+    pointer = (int *) malloc(size*sizeof(int));
+
+    if (pointer == NULL)
+    {
+        error_allocation(size*sizeof(int));
+    }
+
+    return pointer;
+}
+
+
+// Allocate memory for a 2D tab
+static int** init_2D_int_tab(int x, int y)
+{
+    int i;
+    int **pointer = NULL;
+
+    pointer = (int**) malloc(x*sizeof(int*));
+    if (pointer == NULL)
+    {
+        error_allocation(x*sizeof(int*));
+    }
+
+    for (i=0 ; i<x ; i++)
+    {
+        pointer[i] = init_int_tab(y);
+    }
+
+    return pointer;
+}
+
 
 // Free the memory from a 2D tab (initialized by init_2D_tab())
 static void free_2D_float_tab(float **pointer, int x)
@@ -285,6 +325,26 @@ static void free_2D_float_tab(float **pointer, int x)
     free(pointer);
 }
 
+
+// Free the memory from a 2D tab (initialized by init_2D_tab())
+static void free_2D_int_tab(int **pointer, int x)
+{
+    int i;
+
+    for (i=0 ; i<x ; i++)
+    {
+        free(pointer[i]);
+    }
+
+    free(pointer);
+}
+
+
+void error_allocation(long unsigned int byte)
+{
+        printf("ERROR : Memory allocation failed (%lu bytes)\n", byte);
+        exit(EXIT_FAILURE);
+}
 
 //---------------------------------------------------------------------
 // Fonctions prédéfinies pour indiquer si les données sont correctes
