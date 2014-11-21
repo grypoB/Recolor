@@ -41,6 +41,11 @@ static void erreur_seuil_non_distinct(float s1, float s2);
 // from a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max);
 
+// seuillage function in logarithm complexity
+// params : sorted array, size of array, val to look for
+// output : first x such as val > array[x]
+static int seuillage(float array[], int size, float val)
+
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
@@ -144,7 +149,7 @@ int main(void)
             }
             
             image[i][j] = normalize(rgb_values, intensite_max);
-            image[i][j] = seuillage(seuils, nbR+1, image[i][j]);
+            image[i][j] = 1 + seuillage(seuils, nbR+1, image[i][j]);
         }
     }
 
@@ -169,21 +174,24 @@ static float normalize(int rgb_values[], int max)
     return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
 }
 
-
-static int seuillage(float seuils[nbS], int nbS, int val)
+// Return in which interval a val is inside a tab
+// Counts from 0 and interval of type [x, y[
+static int seuillage(float array[], int size, float val)
 {
-    int i;
     
-    if (val < seuils[nbS/2])
+    if (val < array[size/2])
     {
-        if (nbS/2==0)
-            return 1;
+        if (size/2==0)
+            return 0; // before the first value
         else
-            return seuillage(seuils, nbS/2, val);
+            return seuillage(array, size/2, val);
     }
     else
     {
-        return nbS/2 + seuillage(seuils+nbS/2, nbS-nbS/2, val);
+        if (size==1)
+            return 1; // after the last value
+        else // search in the "right" array (so shift the start of the array)
+            return size/2 + seuillage(array+size/2, size-size/2, val);
     }
     
 }
