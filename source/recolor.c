@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h> // for sqrt() function
+#include <math.h> // for sqrt, pow function
 
 
 #define MIN_SEUIL 0
@@ -28,6 +28,8 @@
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
+
+#define MAX_PIXEL_PER_LINE 6 // for printing the image (add line break)
 
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
@@ -45,6 +47,7 @@ static float normalize(int rgb_values[], int max);
 // params : sorted array, size of array, val to look for
 // output : first x such as val > array[x]
 static int seuillage(float array[], int size, float val);
+
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -198,6 +201,50 @@ static int seuillage(float array[], int size, float val)
             return size/2 + seuillage(array+size/2, size-size/2, val);
     }
     
+}
+
+
+// print image in ppm format
+// nor_color[X] contain the normalized values of the sub-pixels of color X 
+// image[][] store the id of the color of the corresponding pixel
+// max_color is used to un-normalized nor_color[]
+static void print_image_ppm(char format[], int x, int y, int image[x][y],  
+                            int nb_color, float nor_color[nb_color][COLOR_COMPONENTS], 
+                            int max_color)
+{
+    int i, j, k;
+    int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
+    int **color = init_2D_int_tab(x, y); // un-normalized value of the color 
+    
+    // un-normalized nor_color
+    for (i=0 ; i<nb_color ; i++)
+        for (j=0 ; j<COLOR_COMPONENTS ; j++)
+        {
+            color[i][j] = nor_color[i][j] * max_color;
+        }
+
+    // print the image
+    // general info about the image
+    printf("%s\n", format);
+    printf("%d\n", x);
+    printf("%d\n", y);
+    printf("%d\n", max_color);
+
+    // the actual image
+    for (j=0 ; j<y ; j++)
+        for (i=0 ; i<x ; i++)
+        {
+            pixel_count++;
+
+            for (k=0 ; k<COLOR_COMPONENTS; k++)
+            {
+                printf("%d ", color[image[i][j]][k]);
+            }
+
+            if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break 
+                printf("\n");
+        }
+
 }
 
 
