@@ -33,7 +33,7 @@
 
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
-static void correct(void);
+//static void correct(void);
 static void erreur_nbR(int nbR);
 static void erreur_couleur(float couleur);
 static void erreur_seuil(float seuil);
@@ -48,6 +48,9 @@ static float normalize(int rgb_values[], int max);
 // output : first x such as val > array[x]
 static int seuillage(float array[], int size, float val);
 
+static void print_image_ppm(char format[], int x, int y, int *image[x],
+                            int nb_color, float *nor_color[nb_color],
+                            int max_color);
 
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -156,11 +159,13 @@ int main(void)
                 scan_int(&rgb_values[k]);
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
-            image[i][j] = 1 + seuillage(seuils, nbR+1, normalize(rgb_values, intensite_max));
+            image[i][j] = 1 + seuillage(seuils, nbR-1, normalize(rgb_values, intensite_max));
         }
     }
 
-    correct();
+    print_image_ppm(format , nbC, nbL, image, nbR+1, couleurs, intensite_max);
+
+    //correct();
 
     free(seuils);
     free_2D_int_tab(image, nbC);
@@ -208,14 +213,14 @@ static int seuillage(float array[], int size, float val)
 // nor_color[X] contain the normalized values of the sub-pixels of color X 
 // image[][] store the id of the color of the corresponding pixel
 // max_color is used to un-normalized nor_color[]
-static void print_image_ppm(char format[], int x, int y, int image[x][y],  
-                            int nb_color, float nor_color[nb_color][COLOR_COMPONENTS], 
+static void print_image_ppm(char format[], int x, int y, int *image[x],
+                            int nb_color, float *nor_color[nb_color],
                             int max_color)
 {
     int i, j, k;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
-    int **color = init_2D_int_tab(x, y); // un-normalized value of the color 
-    
+    int **color = init_2D_int_tab(x, y); // un-normalized value of the color
+
     // un-normalized nor_color
     for (i=0 ; i<nb_color ; i++)
         for (j=0 ; j<COLOR_COMPONENTS ; j++)
@@ -226,13 +231,12 @@ static void print_image_ppm(char format[], int x, int y, int image[x][y],
     // print the image
     // general info about the image
     printf("%s\n", format);
-    printf("%d\n", x);
-    printf("%d\n", y);
+    printf("%d %d\n", x, y);
     printf("%d\n", max_color);
 
     // the actual image
-    for (j=0 ; j<y ; j++)
-        for (i=0 ; i<x ; i++)
+    for (i=0 ; i<x ; i++)
+        for (j=0 ; j<y ; j++)
         {
             pixel_count++;
 
@@ -241,10 +245,11 @@ static void print_image_ppm(char format[], int x, int y, int image[x][y],
                 printf("%d ", color[image[i][j]][k]);
             }
 
-            if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break 
+            if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break
                 printf("\n");
         }
 
+    free_2D_int_tab(color, x);
 }
 
 
@@ -401,10 +406,12 @@ void error_allocation(long unsigned int byte)
 //                 NE PAS MODIFIER CES FONCTIONS
 //---------------------------------------------------------------------
 // A appeler si toutes les données sont correctes (rendu intermédiaire)
+/*
 static void correct(void)
 {
 	printf("Les données sont correctes ! \n");
 }
+//*/
 
 //----------------------------------------------------
 static void erreur_nbR(int nbR)
