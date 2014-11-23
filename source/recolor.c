@@ -58,6 +58,7 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
 static void filtrage(int x, int y, int *image[x], int nb_filtrage);
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
 static void copy_tab(int x, int y, int *source[x], int *target[x]);
+static void reset_2D_tab(int x, int y, int *tab[x], int val);
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
@@ -169,6 +170,8 @@ int main(void)
         }
     }
 
+    filtrage(nbC, nbL, image, nbF);
+
     print_image_ppm(format , nbC, nbL, image, nbR+1, couleurs, intensite_max, nbF);
 
     //correct();
@@ -272,8 +275,12 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
 
 static void filtrage(int x, int y, int *image[x], int nb_filtrage)
 {
-    int i, j, k;
+    int i, j, k, l, m;
     int countF = 0; // count the number of filtrage done
+
+    int prevId = 0;
+    int prevAmmount = 0;
+    int found = 0;
 
     int **temp_image = init_2D_int_tab(x, y);
     int **voisin = init_2D_int_tab(NB_VOISIN-MINIMUM_VOISIN, 2);
@@ -287,7 +294,52 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
             {
                 if (!in_border(x, y, i, j, countF+1))
                 {
+                    temp_image[i][j] = -1;
+                    reset_2D_tab(NB_VOISIN-MINIMUM_VOISIN, 2, voisin, -1);
+                    prevId=0;
+                    prevAmmount=0;
 
+                    for (k=i-1 ; k<i+1 && temp_image[i][j]==-1 ; k++)
+                    {
+                        for (l=j-1 ; l<j+1 && temp_image[i][j]==-1 ; l++)
+                        {
+                            if (k!=i || l!=j)
+                            {
+                                if (image[k][l]==prevId)
+                                {
+                                    prevAmmount++;
+                                    if (prevAmmount >= MINIMUM_VOISIN)
+                                        temp_image[i][j] = prevId;
+                                }
+                                else
+                                {
+                                    found = 0;
+                                    for (m=0 ; m<NB_VOISIN-MINIMUM_VOISIN && found ; m++)
+                                    {
+                                        if (voisin[m][0] == prevId)
+                                        {
+                                            found = 1;
+                                            voisin[m][1] += prevAmmount;
+                                            if (voisin[m][1] >= MINIMUM_VOISIN)
+                                                image[i][j] = prevId;
+
+                                        }
+                                        else if (voisin[m][0] == -1)
+                                        {
+                                            found = 1;
+                                            voisin[m][0] = prevId;
+                                            voisin[m][1] = prevAmmount;
+                                        }
+                                    }
+                                    if (!found) // reach end of array
+                                        image[i][j] = 0;
+
+                                    prevId = image[k][l];
+                                    prevAmmount = 1;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -312,6 +364,15 @@ static void copy_tab(int x, int y, int *source[x], int *target[x])
     for (i=0 ; i<x ; i++)
         for (j=0 ; j<y ; j++)
             target[i][j] = source[i][j];
+}
+
+static void reset_2D_tab(int x, int y, int *tab[x], int val)
+{
+    int i, j;
+
+    for (i=0; i<x ; i++)
+        for(j=0 ; j<y ; j++)
+            tab[i][j] = val;
 }
 
 // Scan an integer from the default input and exit on failure
