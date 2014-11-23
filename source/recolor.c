@@ -29,6 +29,7 @@
 
 #define NB_VOISIN 8
 #define MINIMUM_VOISIN 6
+#define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
@@ -59,6 +60,7 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage);
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
 static void copy_tab(int x, int y, int *source[x], int *target[x]);
 static void reset_2D_tab(int x, int y, int *tab[x], int val);
+static int update_voisin(int size, int *voisin[size], int id, int ammount);
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
@@ -275,15 +277,14 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
 
 static void filtrage(int x, int y, int *image[x], int nb_filtrage)
 {
-    int i, j, k, l, m;
+    int i, j, k, l;
     int countF = 0; // count the number of filtrage done
 
     int prevId = 0;
     int prevAmmount = 0;
-    int found = 0;
 
     int **temp_image = init_2D_int_tab(x, y);
-    int **voisin = init_2D_int_tab(NB_VOISIN-MINIMUM_VOISIN, 2);
+    int **voisin = init_2D_int_tab(TAILLE_VOISIN, 2);
 
 
     for (countF=0; countF<nb_filtrage ; countF++)
@@ -295,17 +296,17 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
                 if (!in_border(x, y, i, j, countF+1))
                 {
                     temp_image[i][j] = -1;
-                    reset_2D_tab(NB_VOISIN-MINIMUM_VOISIN, 2, voisin, -1);
+                    reset_2D_tab(TAILLE_VOISIN, 2, voisin, -1);
                     prevId=0;
                     prevAmmount=0;
 
-                    for (k=i-1 ; k<i+1 && temp_image[i][j]==-1 ; k++)
+                    for (k=i-1 ; k<=i+1 && temp_image[i][j]==-1 ; k++)
                     {
-                        for (l=j-1 ; l<j+1 && temp_image[i][j]==-1 ; l++)
+                        for (l=j-1 ; l<=j+1 && temp_image[i][j]==-1 ; l++)
                         {
                             if (k!=i || l!=j)
                             {
-                                if (image[k][l]==prevId)
+                                if (image[k][l] == prevId)
                                 {
                                     prevAmmount++;
                                     if (prevAmmount >= MINIMUM_VOISIN)
@@ -313,32 +314,20 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
                                 }
                                 else
                                 {
-                                    found = 0;
-                                    for (m=0 ; m<NB_VOISIN-MINIMUM_VOISIN && found ; m++)
-                                    {
-                                        if (voisin[m][0] == prevId)
-                                        {
-                                            found = 1;
-                                            voisin[m][1] += prevAmmount;
-                                            if (voisin[m][1] >= MINIMUM_VOISIN)
-                                                image[i][j] = prevId;
-
-                                        }
-                                        else if (voisin[m][0] == -1)
-                                        {
-                                            found = 1;
-                                            voisin[m][0] = prevId;
-                                            voisin[m][1] = prevAmmount;
-                                        }
-                                    }
-                                    if (!found) // reach end of array
-                                        image[i][j] = 0;
-
+                                    temp_image[i][j] = update_voisin(TAILLE_VOISIN,
+                                                                     voisin, prevId, prevAmmount);
                                     prevId = image[k][l];
                                     prevAmmount = 1;
                                 }
                             }
                         }
+                    }
+                    if (temp_image[i][j] == -1)
+                    {
+                        temp_image[i][j] = update_voisin(TAILLE_VOISIN,
+                                                         voisin, prevId, prevAmmount);
+                        if (temp_image[i][j] == -1)
+                            temp_image[i][j] = 0;
                     }
                 }
             }
@@ -348,7 +337,7 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
     }
 
     free_2D_int_tab(temp_image, x);
-    free_2D_int_tab(voisin, NB_VOISIN-MINIMUM_VOISIN);
+    free_2D_int_tab(voisin, TAILLE_VOISIN);
 }
 
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
@@ -373,6 +362,36 @@ static void reset_2D_tab(int x, int y, int *tab[x], int val)
     for (i=0; i<x ; i++)
         for(j=0 ; j<y ; j++)
             tab[i][j] = val;
+}
+
+static int update_voisin(int size, int *voisin[size], int id, int ammount)
+{
+    int i;
+    int found = 0;
+
+    if (ammount == 0)
+        return -1;
+
+    for (i=0 ; i<size && !found ; i++)
+    {
+        if (voisin[i][0] == id)
+        {
+            found = 1;
+            voisin[i][1] += ammount;
+            if (voisin[i][1] >= MINIMUM_VOISIN)
+                return id;
+        }
+        else if (voisin[i][0] == -1)
+        {
+            found = 1;
+            voisin[i][0] = id;
+            voisin[i][1] = ammount;
+        }
+    }
+    if (!found) // reach end of array
+        return 0;
+    else // cannot decide yet
+        return -1;
 }
 
 // Scan an integer from the default input and exit on failure
