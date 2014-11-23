@@ -61,6 +61,7 @@ static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_bord
 static void copy_tab(int x, int y, int *source[x], int *target[x]);
 static void reset_2D_tab(int x, int y, int *tab[x], int val);
 static int update_voisin(int size, int *voisin[size], int id, int ammount);
+
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
@@ -68,18 +69,14 @@ static void scan_float(float *nb_adress);
 static void scan_string(char string[]);
 
 // memory allocation function
-// params : number of cell
+// params : number of cell and bytes number per cell
 // output : pointer
-static int*  init_int_tab(int size);
-static int** init_2D_int_tab(int x, int y);
-static float*  init_float_tab(int size);
-static float** init_2D_float_tab(int x, int y);
+static void* init_tab(unsigned int rows, unsigned long int bytes)
+static void** init_2D_tab(unsigned int rows, unsigned int columns, unsigned long int bytes)
+static void error_allocation(long unsigned int bytes);
 
-void error_allocation(long unsigned int byte);
-
-// Free a 2D tab (allocated by init_2D_float_tab)
-static void free_2D_int_tab(int **pointer, int x);
-static void free_2D_float_tab(float **pointer, int x);
+// Free a 2D tab (allocated by init_2D_tab)
+static void free_2D_tab(void **ptr, unsigned int rows)
 
 //-------------------------------------------------------------------
 int main(void)
@@ -432,85 +429,40 @@ static void scan_string(char string[])
 
 
 // Allocate memory for a 1D tab
-static float* init_float_tab(int size)
+static void* init_tab(unsigned int rows, unsigned long int bytes)
 {
-    float *pointer = NULL;
-
-    pointer = (float *) malloc(size*sizeof(float));
-
-    if (pointer == NULL)
-    {
-        error_allocation(size*sizeof(float));
-    }
-
-    return pointer;
+    void *ptr = NULL;
+    ptr = malloc(rows*bytes);
+    if (ptr == NULL)
+        error_allocation(rows*bytes);
+    return ptr;
 }
-
 
 // Allocate memory for a 2D tab
-static float** init_2D_float_tab(int x, int y)
+static void** init_2D_tab(unsigned int rows, unsigned int columns, unsigned long int bytes)
 {
     int i;
-    float **pointer = NULL;
+    void **ptr = NULL;
 
-    pointer = (float**) malloc(x*sizeof(float*));
-    if (pointer == NULL)
+    ptr = malloc(rows*sizeof(void*));
+    if (ptr == NULL)
     {
-        error_allocation(x*sizeof(float*));
+        error_allocation(rows*sizeof(void*));
     }
 
-    for (i=0 ; i<x ; i++)
+    for (i=0 ; i<rows ; i++)
     {
-        pointer[i] = init_float_tab(y);
+        ptr[i] = init_tab(columns, bytes);
     }
 
-    return pointer;
+    return ptr;
 }
 
-
-// Allocate memory for a 1D tab
-static int* init_int_tab(int size)
-{
-    int *pointer = NULL;
-
-    pointer = (int *) malloc(size*sizeof(int));
-
-    if (pointer == NULL)
-    {
-        error_allocation(size*sizeof(int));
-    }
-
-    return pointer;
-}
-
-
-// Allocate memory for a 2D tab
-static int** init_2D_int_tab(int x, int y)
+// Free 2D tab initialized by init_2D_tab
+static void free_2D_tab(void **ptr, unsigned int rows)
 {
     int i;
-    int **pointer = NULL;
-
-    pointer = (int**) malloc(x*sizeof(int*));
-    if (pointer == NULL)
-    {
-        error_allocation(x*sizeof(int*));
-    }
-
-    for (i=0 ; i<x ; i++)
-    {
-        pointer[i] = init_int_tab(y);
-    }
-
-    return pointer;
-}
-
-
-// Free the memory from a 2D tab (initialized by init_2D_tab())
-static void free_2D_float_tab(float **pointer, int x)
-{
-    int i;
-
-    for (i=0 ; i<x ; i++)
+    for (i=0 ; i<rows ; i++)
     {
         free(pointer[i]);
     }
@@ -518,24 +470,10 @@ static void free_2D_float_tab(float **pointer, int x)
     free(pointer);
 }
 
-
-// Free the memory from a 2D tab (initialized by init_2D_tab())
-static void free_2D_int_tab(int **pointer, int x)
+// In case malloc fails
+static void error_allocation(long unsigned int bytes)
 {
-    int i;
-
-    for (i=0 ; i<x ; i++)
-    {
-        free(pointer[i]);
-    }
-
-    free(pointer);
-}
-
-
-void error_allocation(long unsigned int byte)
-{
-        printf("ERROR : Memory allocation failed (%lu bytes)\n", byte);
+        printf("ERROR : Memory allocation failed (%lu bytes)\n", bytes);
         exit(EXIT_FAILURE);
 }
 
