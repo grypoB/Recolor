@@ -71,12 +71,12 @@ static void scan_string(char string[]);
 // memory allocation function
 // params : number of cell and bytes number per cell
 // output : pointer
-static void* init_tab(unsigned int rows, unsigned long int bytes)
-static void** init_2D_tab(unsigned int rows, unsigned int columns, unsigned long int bytes)
+static void*  init_tab(unsigned long int bytes, unsigned int rows);
+static void** init_2D_tab(unsigned long int bytes, unsigned int rows, unsigned int columns);
 static void error_allocation(long unsigned int bytes);
 
 // Free a 2D tab (allocated by init_2D_tab)
-static void free_2D_tab(void **ptr, unsigned int rows)
+static void free_2D_tab(void **ptr, unsigned int rows);
 
 //-------------------------------------------------------------------
 int main(void)
@@ -104,7 +104,7 @@ int main(void)
     if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
         erreur_nbR(nbR);
 
-    couleurs = init_2D_float_tab(nbR+1, COLOR_COMPONENTS);
+    couleurs = (float**) init_2D_tab(sizeof(float), nbR+1, COLOR_COMPONENTS);
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
         couleurs[0][i] = BORDER_COLOR;
 
@@ -120,7 +120,7 @@ int main(void)
         }
     }
 
-    seuils = init_float_tab(nbR-1);
+    seuils = (float*) init_tab(sizeof(float), nbR-1);
 
     if (verbose) printf("Entrez les %d seuils de recoloriage :\n", nbR-1);
     for (i=0 ; i<nbR-1 ; i++) // scan seuils
@@ -153,7 +153,7 @@ int main(void)
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
     scan_int(&intensite_max);
 
-    image = init_2D_int_tab(nbC, nbL);
+    image = (int**) init_2D_tab(sizeof(int), nbC, nbL);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
     for (j=0 ; j<nbL ; j++)
@@ -176,8 +176,8 @@ int main(void)
     //correct();
 
     free(seuils);
-    free_2D_int_tab(image, nbC);
-    free_2D_float_tab(couleurs, nbR+1);
+    free_2D_tab((void**) image, nbC);
+    free_2D_tab((void**) couleurs, nbR+1);
 	return EXIT_SUCCESS;
 }
 
@@ -227,7 +227,7 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
 {
     int i, j, k;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
-    int **color = init_2D_int_tab(nb_color, COLOR_COMPONENTS); // un-normalized value of the color
+    int **color = (int**) init_2D_tab(sizeof(int), nb_color, COLOR_COMPONENTS); // un-normalized value of the color
 
     // un-normalized nor_color
     for (i=0 ; i<nb_color ; i++)
@@ -268,7 +268,7 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
                 printf("\n");
         }
 
-    free_2D_int_tab(color, nb_color);
+    free_2D_tab((void**) color, nb_color);
 }
 
 
@@ -280,8 +280,8 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
     int prevId = 0;
     int prevAmmount = 0;
 
-    int **temp_image = init_2D_int_tab(x, y);
-    int **voisin = init_2D_int_tab(TAILLE_VOISIN, 2);
+    int **temp_image = (int**) init_2D_tab(sizeof(int), x, y);
+    int **voisin = (int**) init_2D_tab(sizeof(int), TAILLE_VOISIN, 2);
 
 
     for (countF=0; countF<nb_filtrage ; countF++)
@@ -333,8 +333,8 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
         copy_tab(x, y, temp_image, image);
     }
 
-    free_2D_int_tab(temp_image, x);
-    free_2D_int_tab(voisin, TAILLE_VOISIN);
+    free_2D_tab((void**) temp_image, x);
+    free_2D_tab((void**) voisin, TAILLE_VOISIN);
 }
 
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
@@ -429,7 +429,7 @@ static void scan_string(char string[])
 
 
 // Allocate memory for a 1D tab
-static void* init_tab(unsigned int rows, unsigned long int bytes)
+static void* init_tab(unsigned long int bytes, unsigned int rows)
 {
     void *ptr = NULL;
     ptr = malloc(rows*bytes);
@@ -439,7 +439,7 @@ static void* init_tab(unsigned int rows, unsigned long int bytes)
 }
 
 // Allocate memory for a 2D tab
-static void** init_2D_tab(unsigned int rows, unsigned int columns, unsigned long int bytes)
+static void** init_2D_tab(unsigned long int bytes, unsigned int rows, unsigned int columns)
 {
     int i;
     void **ptr = NULL;
@@ -452,7 +452,7 @@ static void** init_2D_tab(unsigned int rows, unsigned int columns, unsigned long
 
     for (i=0 ; i<rows ; i++)
     {
-        ptr[i] = init_tab(columns, bytes);
+        ptr[i] = init_tab(bytes, columns);
     }
 
     return ptr;
@@ -464,10 +464,10 @@ static void free_2D_tab(void **ptr, unsigned int rows)
     int i;
     for (i=0 ; i<rows ; i++)
     {
-        free(pointer[i]);
+        free(ptr[i]);
     }
 
-    free(pointer);
+    free(ptr);
 }
 
 // In case malloc fails
