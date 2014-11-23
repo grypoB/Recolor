@@ -27,6 +27,9 @@
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 
+#define NB_VOISIN 8
+#define MINIMUM_VOISIN 6
+
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
 #define MAX_PIXEL_PER_LINE 6 // for printing the image (add line break)
@@ -50,8 +53,11 @@ static int seuillage(float array[], int size, float val);
 
 static void print_image_ppm(char format[], int x, int y, int *image[x],
                             int nb_color, float *nor_color[nb_color],
-                            int max_color);
+                            int max_color, int nb_filtrage);
 
+static void filtrage(int x, int y, int *image[x], int nb_filtrage);
+static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
+static void copy_tab(int x, int y, int *source[x], int *target[x]);
 // input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
@@ -235,23 +241,78 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
     printf("%d\n", max_color);
 
     // the actual image
-    for (i=0 ; i<x ; i++)
-        for (j=0 ; j<y ; j++)
+    for (j=0 ; j<y ; j++)
+        for (i=0 ; i<x ; i++)
         {
             pixel_count++;
 
-            for (k=0 ; k<COLOR_COMPONENTS; k++)
+            // if in border
+            if (in_border(x, y, i, j, nb_filtrage))
             {
-                printf("%d ", color[image[i][j]][k]);
+                for (k=0 ; k<COLOR_COMPONENTS; k++)
+                {
+                    printf("%d ", color[0][k]); // border color
+                }
+            }
+            else
+            {
+                for (k=0 ; k<COLOR_COMPONENTS; k++)
+                {
+                    printf("%d ", color[image[i][j]][k]);
+                }
             }
 
             if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break
                 printf("\n");
         }
 
-    free_2D_int_tab(color, x);
+    free_2D_int_tab(color, nb_color);
 }
 
+
+static void filtrage(int x, int y, int *image[x], int nb_filtrage)
+{
+    int i, j, k;
+    int countF = 0; // count the number of filtrage done
+
+    int **temp_image = init_2D_int_tab(x, y);
+    int **voisin = init_2D_int_tab(NB_VOISIN-MINIMUM_VOISIN, 2);
+
+
+    for (countF=0; countF<nb_filtrage ; countF++)
+    {
+        for (i=0; i<x ; i++)
+        {
+            for (j=0; j<y ; j++)
+            {
+                if (!in_border(x, y, i, j, countF+1))
+                {
+
+                }
+            }
+        }
+
+        copy_tab(x, y, temp_image, image);
+    }
+
+    free_2D_int_tab(temp_image, x);
+    free_2D_int_tab(voisin, NB_VOISIN-MINIMUM_VOISIN);
+}
+
+static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
+{
+    return (cor_x<size_border || cor_x>=size_x-size_border ||
+            cor_y<size_border || cor_y>=size_y-size_border);
+}
+
+static void copy_tab(int x, int y, int *source[x], int *target[x])
+{
+    int i, j;
+
+    for (i=0 ; i<x ; i++)
+        for (j=0 ; j<y ; j++)
+            target[i][j] = source[i][j];
+}
 
 // Scan an integer from the default input and exit on failure
 static void scan_int(int *nb_adress)
