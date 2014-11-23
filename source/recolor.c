@@ -150,9 +150,9 @@ int main(void)
     image = init_2D_int_tab(nbC, nbL);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
-    for (i=0 ; i<nbC ; i++)
+    for (j=0 ; j<nbL ; j++)
     {
-        for (j=0 ; j<nbL ; j++)
+        for (i=0 ; i<nbC ; i++)
         {
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
@@ -163,7 +163,7 @@ int main(void)
         }
     }
 
-    print_image_ppm(format , nbC, nbL, image, nbR+1, couleurs, intensite_max);
+    print_image_ppm(format , nbC, nbL, image, nbR+1, couleurs, intensite_max, nbF);
 
     //correct();
 
@@ -215,11 +215,11 @@ static int seuillage(float array[], int size, float val)
 // max_color is used to un-normalized nor_color[]
 static void print_image_ppm(char format[], int x, int y, int *image[x],
                             int nb_color, float *nor_color[nb_color],
-                            int max_color)
+                            int max_color, int nb_filtrage)
 {
     int i, j, k;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
-    int **color = init_2D_int_tab(x, y); // un-normalized value of the color
+    int **color = init_2D_int_tab(nb_color, COLOR_COMPONENTS); // un-normalized value of the color
 
     // un-normalized nor_color
     for (i=0 ; i<nb_color ; i++)
