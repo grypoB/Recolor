@@ -27,7 +27,7 @@
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 
-#define NB_VOISIN 8
+#define NB_VOISIN 8 // number of adjactent cell per cell (filtrage fct expect it equal to 8)
 #define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
                          // optimisation in fct filtrage and print_image_ppm if >= 6
 #define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1 // size ot the array to store voisin values
@@ -76,7 +76,7 @@ static void scan_string(char string[]);
 
 // Tab utility fct :
 // copy
-static void copy_tab(int rows, int columns, int *source[rows], int *target[rows]);
+static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows]);
 // set all value of a tab to val
 static void reset_2D_tab(int rows, int columns, int *tab[rows], int val);
 
@@ -90,7 +90,7 @@ static void error_allocation(long unsigned int bytes);
 static void free_2D_tab(void **ptr, unsigned int rows);
 
 // fonctions prédéfinies pour indiquer si les données sont correctes
-//static void correct(void);
+static void correct(void);
 static void erreur_nbR(int nbR);
 static void erreur_couleur(float couleur);
 static void erreur_seuil(float seuil);
@@ -107,8 +107,8 @@ int main(void)
     float **couleurs = NULL; // tableau des couleurs de recoloriage
 
     char format[FORMAT_SIZE] = {0};
-    int nbC = 0; // nombre de colonne
-    int nbL = 0; // nombre de ligne
+    int columns = 0; // refers to the image
+    int rows = 0; // refers to the image
     int intensite_max = 0;
     int **image = NULL; // 2D array of the image's pixel
 
@@ -116,17 +116,17 @@ int main(void)
 
     couleurs = read_recoloriage(&nbR);
     seuils = read_seuils(nbR-1, &nbF);
-    read_image_params(format, &nbL, &nbC, &intensite_max);
-    image = process_image(nbL, nbC, nbR-1, seuils, intensite_max);
+    read_image_params(format, &rows, &columns, &intensite_max);
+    image = process_image(rows, columns, nbR-1, seuils, intensite_max);
 
-    filtrage(nbL, nbC, image, nbF);
+    filtrage(rows, columns, image, nbF);
 
-    print_image_ppm(format , nbL, nbC, image, nbR+1, couleurs, intensite_max, nbF);
+    print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max, nbF);
 
     //correct();
 
     free(seuils);
-    free_2D_tab((void**) image, nbL);
+    free_2D_tab((void**) image, rows);
     free_2D_tab((void**) couleurs, nbR+1);
 	return EXIT_SUCCESS;
 }
@@ -281,15 +281,17 @@ static int seuillage(float array[], int size, float val)
 // nor_color[X] contain the normalized values of the sub-pixels of color X 
 // image[][] store the id of the color of the corresponding pixel
 // max_color is used to un-normalized nor_color[]
+// nb_filtrage is used for optimisation when MINIMUM_VOISIN >= 6
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
                             int max_color, int nb_filtrage)
 {
-    int i, j, k;
+    int i=0, j=0, k=0;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
-    int **color = (int**) init_2D_tab(sizeof(int), nb_color, COLOR_COMPONENTS); // un-normalized value of the color
+    // to store un-normalized value of the color
+    int **color = (int**) init_2D_tab(sizeof(int), nb_color, COLOR_COMPONENTS);
 
-    // un-normalized nor_color
+    // un-normalize nor_color
     for (i=0 ; i<nb_color ; i++)
         for (j=0 ; j<COLOR_COMPONENTS ; j++)
         {
@@ -399,38 +401,11 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
             }
         }
 
-        copy_tab(rows, columns, temp_image, image);
+        copy_2D_tab(rows, columns, temp_image, image);
     }
 
     free_2D_tab((void**) temp_image, rows);
     free_2D_tab((void**) voisin, TAILLE_VOISIN);
-}
-
-
-static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
-{
-    return (cor_x<size_border || cor_x>=size_x-size_border ||
-            cor_y<size_border || cor_y>=size_y-size_border);
-}
-
-
-static void copy_tab(int rows, int columns, int *source[rows], int *target[rows])
-{
-    int i, j;
-
-    for (i=0 ; i<rows ; i++)
-        for (j=0 ; j<columns ; j++)
-            target[i][j] = source[i][j];
-}
-
-
-static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
-{
-    int i, j;
-
-    for (i=0; i<rows ; i++)
-        for(j=0 ; j<columns ; j++)
-            tab[i][j] = val;
 }
 
 
@@ -465,6 +440,34 @@ static int update_voisin(int size, int *voisin[size], int id, int ammount)
 }
 
 
+// return if a point of coordinates (cor_x, cory) in a grid is in the border of the grid
+static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
+{
+    return (cor_x<size_border || cor_x>=size_x-size_border ||
+            cor_y<size_border || cor_y>=size_y-size_border);
+}
+
+// copy a 2D tab into another 2D tab (of specified size)
+static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows])
+{
+    int i, j;
+
+    for (i=0 ; i<rows ; i++)
+        for (j=0 ; j<columns ; j++)
+            target[i][j] = source[i][j];
+}
+
+// set all values of a 1D tab to val
+static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
+{
+    int i, j;
+
+    for (i=0; i<rows ; i++)
+        for(j=0 ; j<columns ; j++)
+            tab[i][j] = val;
+}
+
+
 // Scan an integer from the default input and exit on failure
 static void scan_int(int *nb_adress)
 {
@@ -475,7 +478,6 @@ static void scan_int(int *nb_adress)
     }
 }
 
-
 // Scan a float from the default input and exit on failure
 static void scan_float(float *nb_adress)
 {
@@ -485,7 +487,6 @@ static void scan_float(float *nb_adress)
         exit(EXIT_FAILURE);
     }
 }
-
 
 // Scan a string from the default input and exit on failure
 /* RISKY
@@ -559,12 +560,10 @@ static void error_allocation(long unsigned int bytes)
 //                 NE PAS MODIFIER CES FONCTIONS
 //---------------------------------------------------------------------
 // A appeler si toutes les données sont correctes (rendu intermédiaire)
-/*
 static void correct(void)
 {
 	printf("Les données sont correctes ! \n");
 }
-//*/
 
 //----------------------------------------------------
 static void erreur_nbR(int nbR)
@@ -586,7 +585,6 @@ static void erreur_seuil(float seuil)
 	printf("Valeur de seuil incorrecte ]0., 1.[: %6.3f\n",seuil);
 	exit(EXIT_FAILURE);
 }
-
 
 //-------------------------------------------------------------
 // A appeler si s1 > s2, où s1 et s2 sont 2 seuils consécutifs
