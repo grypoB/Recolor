@@ -52,14 +52,14 @@ static float normalize(int rgb_values[], int max);
 // output : first x such as val > array[x]
 static int seuillage(float array[], int size, float val);
 
-static void print_image_ppm(char format[], int x, int y, int *image[x],
+static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
                             int max_color, int nb_filtrage);
 
-static void filtrage(int x, int y, int *image[x], int nb_filtrage);
+static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
-static void copy_tab(int x, int y, int *source[x], int *target[x]);
-static void reset_2D_tab(int x, int y, int *tab[x], int val);
+static void copy_tab(int rows, int columns, int *source[rows], int *target[rows]);
+static void reset_2D_tab(int rows, int columns, int *tab[rows], int val);
 static int update_voisin(int size, int *voisin[size], int id, int ammount);
 
 // input function, act as scanf, but checks if the return value is correct 
@@ -153,12 +153,12 @@ int main(void)
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
     scan_int(&intensite_max);
 
-    image = (int**) init_2D_tab(sizeof(int), nbC, nbL);
+    image = (int**) init_2D_tab(sizeof(int), nbL, nbC);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
-    for (j=0 ; j<nbL ; j++)
+    for (i=0 ; i<nbL ; i++)
     {
-        for (i=0 ; i<nbC ; i++)
+        for (j=0 ; j<nbC ; j++)
         {
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
@@ -169,14 +169,14 @@ int main(void)
         }
     }
 
-    filtrage(nbC, nbL, image, nbF);
+    filtrage(nbL, nbC, image, nbF);
 
-    print_image_ppm(format , nbC, nbL, image, nbR+1, couleurs, intensite_max, nbF);
+    print_image_ppm(format , nbL, nbC, image, nbR+1, couleurs, intensite_max, nbF);
 
     //correct();
 
     free(seuils);
-    free_2D_tab((void**) image, nbC);
+    free_2D_tab((void**) image, nbL);
     free_2D_tab((void**) couleurs, nbR+1);
 	return EXIT_SUCCESS;
 }
@@ -221,7 +221,7 @@ static int seuillage(float array[], int size, float val)
 // nor_color[X] contain the normalized values of the sub-pixels of color X 
 // image[][] store the id of the color of the corresponding pixel
 // max_color is used to un-normalized nor_color[]
-static void print_image_ppm(char format[], int x, int y, int *image[x],
+static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
                             int max_color, int nb_filtrage)
 {
@@ -239,17 +239,17 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
     // print the image
     // general info about the image
     printf("%s\n", format);
-    printf("%d %d\n", x, y);
+    printf("%d %d\n", columns, rows);
     printf("%d\n", max_color);
 
     // the actual image
-    for (j=0 ; j<y ; j++)
-        for (i=0 ; i<x ; i++)
+    for (i=0 ; i<rows ; i++)
+        for (j=0 ; j<columns ; j++)
         {
             pixel_count++;
 
             // if in border
-            if (in_border(x, y, i, j, nb_filtrage))
+            if (in_border(rows, columns, i, j, nb_filtrage))
             {
                 for (k=0 ; k<COLOR_COMPONENTS; k++)
                 {
@@ -272,7 +272,7 @@ static void print_image_ppm(char format[], int x, int y, int *image[x],
 }
 
 
-static void filtrage(int x, int y, int *image[x], int nb_filtrage)
+static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 {
     int i, j, k, l;
     int countF = 0; // count the number of filtrage done
@@ -280,17 +280,17 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
     int prevId = 0;
     int prevAmmount = 0;
 
-    int **temp_image = (int**) init_2D_tab(sizeof(int), x, y);
+    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns);
     int **voisin = (int**) init_2D_tab(sizeof(int), TAILLE_VOISIN, 2);
 
 
     for (countF=0; countF<nb_filtrage ; countF++)
     {
-        for (i=0; i<x ; i++)
+        for (i=0; i<rows ; i++)
         {
-            for (j=0; j<y ; j++)
+            for (j=0; j<columns ; j++)
             {
-                if (!in_border(x, y, i, j, countF+1))
+                if (!in_border(rows, columns, i, j, countF+1))
                 {
                     temp_image[i][j] = -1;
                     reset_2D_tab(TAILLE_VOISIN, 2, voisin, -1);
@@ -330,10 +330,10 @@ static void filtrage(int x, int y, int *image[x], int nb_filtrage)
             }
         }
 
-        copy_tab(x, y, temp_image, image);
+        copy_tab(rows, columns, temp_image, image);
     }
 
-    free_2D_tab((void**) temp_image, x);
+    free_2D_tab((void**) temp_image, rows);
     free_2D_tab((void**) voisin, TAILLE_VOISIN);
 }
 
@@ -343,21 +343,21 @@ static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_bord
             cor_y<size_border || cor_y>=size_y-size_border);
 }
 
-static void copy_tab(int x, int y, int *source[x], int *target[x])
+static void copy_tab(int rows, int columns, int *source[rows], int *target[rows])
 {
     int i, j;
 
-    for (i=0 ; i<x ; i++)
-        for (j=0 ; j<y ; j++)
+    for (i=0 ; i<rows ; i++)
+        for (j=0 ; j<columns ; j++)
             target[i][j] = source[i][j];
 }
 
-static void reset_2D_tab(int x, int y, int *tab[x], int val)
+static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
 {
     int i, j;
 
-    for (i=0; i<x ; i++)
-        for(j=0 ; j<y ; j++)
+    for (i=0; i<rows ; i++)
+        for(j=0 ; j<columns ; j++)
             tab[i][j] = val;
 }
 
