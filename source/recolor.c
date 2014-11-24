@@ -3,8 +3,8 @@
 	Nom    : Devienne
 	Prenom : Alexandre
 	CAMIPRO: 246865
-	Date   : 2014-10-30
-	Version code: 1.00
+	Date   : 2014-11-24
+	Version code: 2.00
 	Version de la donnée: 1.03
 	Description : projet recolor. lit une table de couleurs
 	 et des seuils pour transformer une image en format ppm
@@ -15,11 +15,11 @@
 #include <math.h> // for sqrt, pow function
 
 
-#define MIN_SEUIL 0
+#define MIN_SEUIL 0 // allowed interval for seuils (normalized value)
 #define MAX_SEUIL 1
 #define TOLERANCE_SEUIL 0.005f // différence min entre 2 seuils successifs
 
-#define MIN_COLOR 0 // min/max value of a color (0 and 1 for normalized value)
+#define MIN_COLOR 0 // allowed interval for normalized "recoloriage" color
 #define MAX_COLOR 1
 #define MIN_RECOLOR_NB 2
 #define MAX_RECOLOR_NB 255
@@ -28,21 +28,24 @@
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 
 #define NB_VOISIN 8
-#define MINIMUM_VOISIN 6
-#define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1
+#define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
+                         // optimisation in fct filtrage and print_image_ppm if >= 6
+#define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1 // size ot the array to store voisin values
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
 #define MAX_PIXEL_PER_LINE 6 // for printing the image (add line break)
 
 
-// fonctions prédéfinies pour indiquer si les données sont correctes
-//static void correct(void);
-static void erreur_nbR(int nbR);
-static void erreur_couleur(float couleur);
-static void erreur_seuil(float seuil);
-static void erreur_seuil_non_croissant(float s1, float s2);
-static void erreur_seuil_non_distinct(float s1, float s2);
+int verbose = -1;
+
+
+// Read the various input and init corresponding arrays
+static float** read_recoloriage(int *nbR_adr);
+static float* read_seuils(int size_seuils, int *nb_filtrage_adr);
+static void read_image_params(char format[], int *nbL_adr, int *nbC_adr, int *intensite_max_adr);
+static int** process_image(int rows, int columns, int size_seuils,
+                           float seuils[size_seuils], int intensite_max);
 
 // from a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max);
@@ -52,39 +55,52 @@ static float normalize(int rgb_values[], int max);
 // output : first x such as val > array[x]
 static int seuillage(float array[], int size, float val);
 
+// filtrage algorithm
+static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
+static int update_voisin(int size, int *voisin[size], int id, int ammount);
+
+// print the image out of filtrage fct
+// need nb_filtrage to create a black border
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
                             int max_color, int nb_filtrage);
 
-static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
+// return if a point of coordinates (cor_x, cory) in a grid is in the border of the grid
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
-static void copy_tab(int rows, int columns, int *source[rows], int *target[rows]);
-static void reset_2D_tab(int rows, int columns, int *tab[rows], int val);
-static int update_voisin(int size, int *voisin[size], int id, int ammount);
 
-// input function, act as scanf, but checks if the return value is correct 
+// Input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
 static void scan_int(int *nb_adress);
 static void scan_float(float *nb_adress);
 static void scan_string(char string[]);
 
-// memory allocation function
+// Tab utility fct :
+// copy
+static void copy_tab(int rows, int columns, int *source[rows], int *target[rows]);
+// set all value of a tab to val
+static void reset_2D_tab(int rows, int columns, int *tab[rows], int val);
+
+// Memory allocation function
 // params : number of cell and bytes number per cell
 // output : pointer
 static void*  init_tab(unsigned long int bytes, unsigned int rows);
 static void** init_2D_tab(unsigned long int bytes, unsigned int rows, unsigned int columns);
 static void error_allocation(long unsigned int bytes);
-
-// Free a 2D tab (allocated by init_2D_tab)
+// free a 2D tab (allocated by init_2D_tab)
 static void free_2D_tab(void **ptr, unsigned int rows);
+
+// fonctions prédéfinies pour indiquer si les données sont correctes
+//static void correct(void);
+static void erreur_nbR(int nbR);
+static void erreur_couleur(float couleur);
+static void erreur_seuil(float seuil);
+static void erreur_seuil_non_croissant(float s1, float s2);
+static void erreur_seuil_non_distinct(float s1, float s2);
+
 
 //-------------------------------------------------------------------
 int main(void)
 {
-    int i=0, j=0, k=0;
-
-    int verbose = -1;
-
     int nbR = 0; // nombre de couleurs de recoloriage
     int nbF = 0; // nombre de filtrages
     float *seuils    = NULL; // seuils utilisés
@@ -94,23 +110,47 @@ int main(void)
     int nbC = 0; // nombre de colonne
     int nbL = 0; // nombre de ligne
     int intensite_max = 0;
-    int rgb_values[COLOR_COMPONENTS] = {0};
     int **image = NULL; // 2D array of the image's pixel
 
     scan_int(&verbose); // verbose value is assumed correct
 
-    if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
-    scan_int(&nbR);
-    if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
-        erreur_nbR(nbR);
+    couleurs = read_recoloriage(&nbR);
+    seuils = read_seuils(nbR-1, &nbF);
+    read_image_params(format, &nbL, &nbC, &intensite_max);
+    image = process_image(nbL, nbC, nbR-1, seuils, intensite_max);
 
-    couleurs = (float**) init_2D_tab(sizeof(float), nbR+1, COLOR_COMPONENTS);
+    filtrage(nbL, nbC, image, nbF);
+
+    print_image_ppm(format , nbL, nbC, image, nbR+1, couleurs, intensite_max, nbF);
+
+    //correct();
+
+    free(seuils);
+    free_2D_tab((void**) image, nbL);
+    free_2D_tab((void**) couleurs, nbR+1);
+	return EXIT_SUCCESS;
+}
+
+
+// read the colors of the "recoloriage"
+// return pointer to 2D array of colors (needs to be freed)
+static float** read_recoloriage(int *nbR_adr)
+{
+    int i=0, j=0;
+    float **couleurs = NULL;
+
+    if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
+    scan_int(nbR_adr);
+    if (*nbR_adr<MIN_RECOLOR_NB || *nbR_adr>MAX_RECOLOR_NB)
+        erreur_nbR(*nbR_adr);
+
+    couleurs = (float**) init_2D_tab(sizeof(float), *nbR_adr+1, COLOR_COMPONENTS);
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
         couleurs[0][i] = BORDER_COLOR;
 
     if (verbose) printf("Entrez les %d couleurs de recoloriage "
-                        "(format RGB normalisé) :\n", nbR);
-    for (i=1 ; i<nbR+1 ; i++) // scan color
+                        "(format RGB normalisé) :\n", *nbR_adr);
+    for (i=1 ; i<*nbR_adr+1 ; i++) // scan color
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
@@ -120,10 +160,20 @@ int main(void)
         }
     }
 
-    seuils = (float*) init_tab(sizeof(float), nbR-1);
+    return couleurs;
+}
 
-    if (verbose) printf("Entrez les %d seuils de recoloriage :\n", nbR-1);
-    for (i=0 ; i<nbR-1 ; i++) // scan seuils
+
+// read the various seuils and check if they are corect
+// also reads the number of filtrage
+// return pointer to array seuils (needs to be freed)
+static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
+{
+    int i=0;
+    float *seuils = (float*) init_tab(sizeof(float), size_seuils);
+
+    if (verbose) printf("Entrez les %d seuils de recoloriage :\n", size_seuils);
+    for (i=0 ; i<size_seuils ; i++) // scan seuils
     {
         scan_float(&seuils[i]);
         if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
@@ -142,43 +192,52 @@ int main(void)
     }
 
     if (verbose) printf("Entrez le nombre de filtrage :\n");
-    scan_int(&nbF); // nbF is assumed correct
+    scan_int(nb_filtrage_adr); // filtrage nb is assumed correct
 
-    // all values are assumed correct from this point
+    return seuils;
+}
+
+
+// read the image basic parameters
+static void read_image_params(char format[], int *nbL_adr, int *nbC_adr, int *intensite_max_adr)
+{
+    // all values are assumed correct
     if (verbose) printf("Entrez le code du format de l'image :\n");
     scan_string(format);
     if (verbose) printf("Entrez les dimensions de l'image :\n");
-    scan_int(&nbC);
-    scan_int(&nbL);
+    scan_int(nbC_adr);
+    scan_int(nbL_adr);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
-    scan_int(&intensite_max);
+    scan_int(intensite_max_adr);
 
-    image = (int**) init_2D_tab(sizeof(int), nbL, nbC);
+}
+
+
+// read the image's pixels and already to a "seuillage"
+// return the pointer to image (needs to be freed)
+static int** process_image(int rows, int columns, int size_seuils,
+                          float seuils[size_seuils], int intensite_max)
+{
+    int i=0, j=0, k=0;
+    int rgb_values[COLOR_COMPONENTS] = {0};
+    int **image = (int**) init_2D_tab(sizeof(int), rows, columns);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
-    for (i=0 ; i<nbL ; i++)
+    for (i=0 ; i<rows ; i++)
     {
-        for (j=0 ; j<nbC ; j++)
+        for (j=0 ; j<columns ; j++)
         {
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
+                // pixel values are assumed correct
                 scan_int(&rgb_values[k]);
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
-            image[i][j] = 1 + seuillage(seuils, nbR-1, normalize(rgb_values, intensite_max));
+            image[i][j] = 1 + seuillage(seuils, size_seuils, normalize(rgb_values, intensite_max));
         }
     }
 
-    filtrage(nbL, nbC, image, nbF);
-
-    print_image_ppm(format , nbL, nbC, image, nbR+1, couleurs, intensite_max, nbF);
-
-    //correct();
-
-    free(seuils);
-    free_2D_tab((void**) image, nbL);
-    free_2D_tab((void**) couleurs, nbR+1);
-	return EXIT_SUCCESS;
+    return image;
 }
 
 
@@ -193,6 +252,7 @@ static float normalize(int rgb_values[], int max)
 
     return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
 }
+
 
 // Return in which interval a val is inside a tab
 // Counts from 0 and interval of type [x, y[
@@ -248,8 +308,12 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
         {
             pixel_count++;
 
-            // if in border
+            #if MINIMUM_VOISIN >= 6
+            // a black border "grows" at each filtrage, iff MINIMUM_VOISIN >= 6)
             if (in_border(rows, columns, i, j, nb_filtrage))
+            #else
+            if (in_border(rows, columns, i, j, 1))
+            #endif
             {
                 for (k=0 ; k<COLOR_COMPONENTS; k++)
                 {
@@ -290,7 +354,12 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
         {
             for (j=0; j<columns ; j++)
             {
+                #if MINIMUM_VOISIN >= 6
+                // a black border "grows" at each filtrage, iff MINIMUM_VOISIN >= 6)
                 if (!in_border(rows, columns, i, j, countF+1))
+                #else
+                if (!in_border(rows, columns, i, j, 1))
+                #endif
                 {
                     temp_image[i][j] = -1;
                     reset_2D_tab(TAILLE_VOISIN, 2, voisin, -1);
@@ -337,11 +406,13 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     free_2D_tab((void**) voisin, TAILLE_VOISIN);
 }
 
+
 static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
 {
     return (cor_x<size_border || cor_x>=size_x-size_border ||
             cor_y<size_border || cor_y>=size_y-size_border);
 }
+
 
 static void copy_tab(int rows, int columns, int *source[rows], int *target[rows])
 {
@@ -352,6 +423,7 @@ static void copy_tab(int rows, int columns, int *source[rows], int *target[rows]
             target[i][j] = source[i][j];
 }
 
+
 static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
 {
     int i, j;
@@ -360,6 +432,7 @@ static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
         for(j=0 ; j<columns ; j++)
             tab[i][j] = val;
 }
+
 
 static int update_voisin(int size, int *voisin[size], int id, int ammount)
 {
@@ -390,6 +463,7 @@ static int update_voisin(int size, int *voisin[size], int id, int ammount)
     else // cannot decide yet
         return -1;
 }
+
 
 // Scan an integer from the default input and exit on failure
 static void scan_int(int *nb_adress)

@@ -1,2 +1,2 @@
 recolor.x : recolor.c
-	gcc -Wall -o recolor.x recolor.c -lm
+	gcc -Wall -g -o recolor.x recolor.c -lm
