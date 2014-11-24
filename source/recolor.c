@@ -26,11 +26,13 @@
 #define COLOR_COMPONENTS 3 // number of components per color (RGB format)
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
+#define DEFAULT_COLOR 0
 
 #define NB_VOISIN 8 // number of adjactent cell per cell (filtrage fct expect it equal to 8)
 #define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
-                         // optimisation in fct filtrage and print_image_ppm if >= 6
 #define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1 // size ot the array to store voisin values
+
+#define UNASSIGNED -1 // a default val until a correct val is assigned
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
@@ -57,16 +59,13 @@ static int seuillage(float array[], int size, float val);
 
 // filtrage algorithm
 static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
-static int update_voisin(int size, int *voisin[size], int id, int ammount);
+static int update_voisin(int *voisin[TAILLE_VOISIN], int color, int ammount);
+static void reset_voisin(int *voisin[TAILLE_VOISIN]);
 
 // print the image out of filtrage fct
-// need nb_filtrage to create a black border
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
-                            int max_color, int nb_filtrage);
-
-// return if a point of coordinates (cor_x, cory) in a grid is in the border of the grid
-static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border);
+                            int max_color);
 
 // Input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -77,8 +76,8 @@ static void scan_string(char string[]);
 // Tab utility fct :
 // copy
 static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows]);
-// set all value of a tab to val
-static void reset_2D_tab(int rows, int columns, int *tab[rows], int val);
+// set border of 2D tab to a specified val
+static void set_border(int rows, int columns, int *tab[rows], int val);
 
 // Memory allocation function
 // params : number of cell and bytes number per cell
@@ -121,7 +120,7 @@ int main(void)
 
     filtrage(rows, columns, image, nbF);
 
-    print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max, nbF);
+    print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max);
 
     //correct();
 
@@ -146,7 +145,7 @@ static float** read_recoloriage(int *nbR_adr)
 
     couleurs = (float**) init_2D_tab(sizeof(float), *nbR_adr+1, COLOR_COMPONENTS);
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
-        couleurs[0][i] = BORDER_COLOR;
+        couleurs[DEFAULT_COLOR][i] = BORDER_COLOR;
 
     if (verbose) printf("Entrez les %d couleurs de recoloriage "
                         "(format RGB normalisé) :\n", *nbR_adr);
@@ -281,10 +280,9 @@ static int seuillage(float array[], int size, float val)
 // nor_color[X] contain the normalized values of the sub-pixels of color X 
 // image[][] store the id of the color of the corresponding pixel
 // max_color is used to un-normalized nor_color[]
-// nb_filtrage is used for optimisation when MINIMUM_VOISIN >= 6
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color],
-                            int max_color, int nb_filtrage)
+                            int max_color)
 {
     int i=0, j=0, k=0;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
@@ -309,25 +307,9 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
         for (j=0 ; j<columns ; j++)
         {
             pixel_count++;
-
-            #if MINIMUM_VOISIN >= 6
-            // a black border "grows" at each filtrage, iff MINIMUM_VOISIN >= 6)
-            if (in_border(rows, columns, i, j, nb_filtrage))
-            #else
-            if (in_border(rows, columns, i, j, 1))
-            #endif
+            for (k=0 ; k<COLOR_COMPONENTS; k++)
             {
-                for (k=0 ; k<COLOR_COMPONENTS; k++)
-                {
-                    printf("%d ", color[0][k]); // border color
-                }
-            }
-            else
-            {
-                for (k=0 ; k<COLOR_COMPONENTS; k++)
-                {
-                    printf("%d ", color[image[i][j]][k]);
-                }
+                printf("%d ", color[image[i][j]][k]);
             }
 
             if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break
@@ -338,69 +320,50 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
 }
 
 
+// filtrage main fct
 static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 {
     int i, j, k, l;
     int countF = 0; // count the number of filtrage done
 
-    int prevId = 0;
-    int prevAmmount = 0;
-
-    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns);
+    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
     int **voisin = (int**) init_2D_tab(sizeof(int), TAILLE_VOISIN, 2);
 
+    /* voisin[TAILLE_VOISIN][2]
+        Store in each row a neighbooring color and the ammount of it
+    */
 
+    if (nb_filtrage>=1) // set border to DEFAULT_COLOR
+        set_border(rows, columns, temp_image, DEFAULT_COLOR);
     for (countF=0; countF<nb_filtrage ; countF++)
     {
-        for (i=0; i<rows ; i++)
+        for (i=1; i<rows-1 ; i++) // cycle through all pixels (border excepted)
         {
-            for (j=0; j<columns ; j++)
+            for (j=1; j<columns-1 ; j++)
             {
-                #if MINIMUM_VOISIN >= 6
-                // a black border "grows" at each filtrage, iff MINIMUM_VOISIN >= 6)
-                if (!in_border(rows, columns, i, j, countF+1))
-                #else
-                if (!in_border(rows, columns, i, j, 1))
-                #endif
-                {
-                    temp_image[i][j] = -1;
-                    reset_2D_tab(TAILLE_VOISIN, 2, voisin, -1);
-                    prevId=0;
-                    prevAmmount=0;
+                temp_image[i][j] = UNASSIGNED; // reset values for current pixel
+                reset_voisin(voisin);
 
-                    for (k=i-1 ; k<=i+1 && temp_image[i][j]==-1 ; k++)
+                for (k=i-1 ; k<=i+1 ; k++) // cycle through all voisin
+                {
+                    for (l=j-1 ; l<=j+1 && temp_image[i][j]==UNASSIGNED ; l++)
                     {
-                        for (l=j-1 ; l<=j+1 && temp_image[i][j]==-1 ; l++)
+                        if (k!=i || l!=j) // if not equal to current checked pixel
                         {
-                            if (k!=i || l!=j)
-                            {
-                                if (image[k][l] == prevId)
-                                {
-                                    prevAmmount++;
-                                    if (prevAmmount >= MINIMUM_VOISIN)
-                                        temp_image[i][j] = prevId;
-                                }
-                                else
-                                {
-                                    temp_image[i][j] = update_voisin(TAILLE_VOISIN,
-                                                                     voisin, prevId, prevAmmount);
-                                    prevId = image[k][l];
-                                    prevAmmount = 1;
-                                }
-                            }
+                            // check if this new data allows to make any descision
+                            temp_image[i][j] = update_voisin(voisin, image[k][l], 1);
                         }
                     }
-                    if (temp_image[i][j] == -1)
-                    {
-                        temp_image[i][j] = update_voisin(TAILLE_VOISIN,
-                                                         voisin, prevId, prevAmmount);
-                        if (temp_image[i][j] == -1)
-                            temp_image[i][j] = 0;
-                    }
+                }
+                // if not decided yet (if voisin colors_nb <= TAILLE_VOISIN, but none >= MINIMUM_VOISIN)
+                if (temp_image[i][j] == UNASSIGNED)
+                {
+                    temp_image[i][j] = DEFAULT_COLOR;
                 }
             }
         }
 
+        // update image by temp_image for further filtrage
         copy_2D_tab(rows, columns, temp_image, image);
     }
 
@@ -409,43 +372,73 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 }
 
 
-static int update_voisin(int size, int *voisin[size], int id, int ammount)
+// update voisin[][] with given params :
+// params : increase the color by ammount (find a new slot for it if not already assigned
+// return : color whci should be the result pixel given the data in voisin
+// e.g : 1 - if a color >= MAXIMUM_VOISIN, return this color
+//       2 - if all color slots are already assigned, return the DEFAULT_COLOR
+//           (because none can reach MINIMUM_VOISIN given the definition of TAILLE_VOISIN)
+static int update_voisin(int *voisin[TAILLE_VOISIN], int color, int ammount)
 {
     int i;
-    int found = 0;
+    int found = 0; // if a place in array as been found
 
     if (ammount == 0)
-        return -1;
+        return UNASSIGNED;
 
-    for (i=0 ; i<size && !found ; i++)
+    for (i=0 ; i<TAILLE_VOISIN && !found ; i++)
     {
-        if (voisin[i][0] == id)
+        if (voisin[i][0] == color || voisin[i][0]==UNASSIGNED)
         {
             found = 1;
+            voisin[i][0] = color;
             voisin[i][1] += ammount;
+
             if (voisin[i][1] >= MINIMUM_VOISIN)
-                return id;
-        }
-        else if (voisin[i][0] == -1)
-        {
-            found = 1;
-            voisin[i][0] = id;
-            voisin[i][1] = ammount;
+                return color;
         }
     }
-    if (!found) // reach end of array
-        return 0;
-    else // cannot decide yet
-        return -1;
+    if (!found) // no place left in array, thus no color can be >= MINIMUM_VOISIN
+        return DEFAULT_COLOR;
+    else // not enough data to decide yet
+        return UNASSIGNED;
 }
 
 
-// return if a point of coordinates (cor_x, cory) in a grid is in the border of the grid
-static int in_border(int size_x, int size_y, int cor_x, int cor_y, int size_border)
+static void reset_voisin(int *voisin[TAILLE_VOISIN])
 {
-    return (cor_x<size_border || cor_x>=size_x-size_border ||
-            cor_y<size_border || cor_y>=size_y-size_border);
+    int i;
+
+    for (i=0; i<TAILLE_VOISIN ; i++)
+    {
+        voisin[i][0] = UNASSIGNED; // set all color to default (-1)
+        voisin[i][1] = 0; // reset all ammount to 0
+    }
 }
+
+
+static void set_border(int rows, int columns, int *tab[rows], int val)
+{
+    int i;
+
+    if (rows>=1 && columns>=1)
+    {
+        // set top and bottom row
+        for (i=0 ; i<columns ; i++)
+        {
+            tab[0][i] = val;
+            tab[rows-1][i] = val;
+
+        }
+        // set left and right column
+        for (i=1 ; i<rows-1 ; i++)
+        {
+            tab[i][0] = val;
+            tab[i][columns-1] = val;
+        }
+    }
+}
+
 
 // copy a 2D tab into another 2D tab (of specified size)
 static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows])
@@ -456,17 +449,6 @@ static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[ro
         for (j=0 ; j<columns ; j++)
             target[i][j] = source[i][j];
 }
-
-// set all values of a 1D tab to val
-static void reset_2D_tab(int rows, int columns, int *tab[rows], int val)
-{
-    int i, j;
-
-    for (i=0; i<rows ; i++)
-        for(j=0 ; j<columns ; j++)
-            tab[i][j] = val;
-}
-
 
 // Scan an integer from the default input and exit on failure
 static void scan_int(int *nb_adress)
