@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h> // for sqrt, pow function
+#include <math.h> // for sqrt function
 
 
 #define MIN_SEUIL 0 // allowed interval for seuils (normalized value)
@@ -126,11 +126,11 @@ int main(void)
     filtrage(rows, columns, image, nbF);
 
     print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max);
-    //*/
+    // */
 
     /* Rendu inter
     correct();
-    //*/
+    // */
 
     free(seuils);
     free_2D_tab((void**) image, rows);
@@ -255,7 +255,7 @@ static float normalize(int rgb_values[], int max)
     float result = 0;
  
     for (i=0 ; i<COLOR_COMPONENTS ; i++)
-        result += pow(rgb_values[i], 2);
+        result += rgb_values[i] * rgb_values[i];
 
     return sqrt(result) / (sqrt(COLOR_COMPONENTS) * max);
 }
