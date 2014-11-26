@@ -26,11 +26,15 @@
 #define COLOR_COMPONENTS 3 // number of components per color (RGB format)
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
-#define DEFAULT_COLOR 0
+#define DEFAULT_COLOR 0 // color id used for border and for filtrage
+#define INIT_BORDER_SIZE 1 // the size of the black border arround the picture
 
-#define NB_VOISIN 8 // number of adjactent cell per cell (filtrage fct expect it equal to 8)
+#define VOISIN_RADIUS 1
 #define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
-#define TAILLE_VOISIN NB_VOISIN - MINIMUM_VOISIN + 1 // size ot the array to store voisin values
+// size ot the array to store voisin values
+// (maximum of adjacent color before the result color is DEFAULt_COLOR)
+//                    |        number of voisin         |
+#define TAILLE_VOISIN (4*VOISIN_RADIUS*(VOISIN_RADIUS+1)) - MINIMUM_VOISIN + 1
 
 #define UNASSIGNED -1 // a default val until a correct val is assigned
 
@@ -59,13 +63,13 @@ static int seuillage(float array[], int size, float val);
 
 // filtrage algorithm
 static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
-static int update_voisin(int *voisin[TAILLE_VOISIN], int color, int ammount);
-static void reset_voisin(int *voisin[TAILLE_VOISIN]);
+// fct to manipulate voisin[][] which stores value of neighbooring cells
+static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount);
+static void reset_voisin(int voisin[TAILLE_VOISIN][2]);
 
 // print the image out of filtrage fct
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
-                            int nb_color, float *nor_color[nb_color],
-                            int max_color);
+                            int nb_color, float *nor_color[nb_color], int max_color);
 
 // Input function, act as scanf, but checks if the return value is correct 
 // params : pointer to var
@@ -326,15 +330,15 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     int i, j, k, l;
     int countF = 0; // count the number of filtrage done
 
+    int voisin[TAILLE_VOISIN][2] = {{0}};
     int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
-    int **voisin = (int**) init_2D_tab(sizeof(int), TAILLE_VOISIN, 2);
 
     /* voisin[TAILLE_VOISIN][2]
         Store in each row a neighbooring color and the ammount of it
     */
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
-        set_border(rows, columns, temp_image, DEFAULT_COLOR);
+        set_border(rows, columns, temp_image, DEFAULT_COLOR, INIT_BORDER_SIZE);
     for (countF=0; countF<nb_filtrage ; countF++)
     {
         for (i=1; i<rows-1 ; i++) // cycle through all pixels (border excepted)
@@ -344,11 +348,11 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
                 temp_image[i][j] = UNASSIGNED; // reset values for current pixel
                 reset_voisin(voisin);
 
-                for (k=i-1 ; k<=i+1 ; k++) // cycle through all voisin
+                for (k=i-VOISIN_RADIUS ; k<=i+VOISIN_RADIUS ; k++) // cycle through all voisin
                 {
-                    for (l=j-1 ; l<=j+1 && temp_image[i][j]==UNASSIGNED ; l++)
+                    for (l=j-VOISIN_RADIUS ; l<=j+VOISIN_RADIUS && temp_image[i][j]==UNASSIGNED ; l++)
                     {
-                        if (k!=i || l!=j) // if not equal to current checked pixel
+                        if (k!=i || l!=j) // if not equal to center pixel
                         {
                             // check if this new data allows to make any descision
                             temp_image[i][j] = update_voisin(voisin, image[k][l], 1);
@@ -368,7 +372,6 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     }
 
     free_2D_tab((void**) temp_image, rows);
-    free_2D_tab((void**) voisin, TAILLE_VOISIN);
 }
 
 
@@ -378,7 +381,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 // e.g : 1 - if a color >= MAXIMUM_VOISIN, return this color
 //       2 - if all color slots are already assigned, return the DEFAULT_COLOR
 //           (because none can reach MINIMUM_VOISIN given the definition of TAILLE_VOISIN)
-static int update_voisin(int *voisin[TAILLE_VOISIN], int color, int ammount)
+static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount)
 {
     int i;
     int found = 0; // if a place in array as been found
