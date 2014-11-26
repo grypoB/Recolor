@@ -81,7 +81,7 @@ static void scan_string(char string[]);
 // copy
 static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows]);
 // set border of 2D tab to a specified val
-static void set_border(int rows, int columns, int *tab[rows], int val);
+static void set_border(int rows, int columns, int *tab[rows], int val, int border_size);
 
 // Memory allocation function
 // params : number of cell and bytes number per cell
@@ -408,36 +408,46 @@ static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount)
 }
 
 
-static void reset_voisin(int *voisin[TAILLE_VOISIN])
+// clear voisin[][] for further anylisis
+static void reset_voisin(int voisin[TAILLE_VOISIN][2])
 {
     int i;
 
     for (i=0; i<TAILLE_VOISIN ; i++)
     {
         voisin[i][0] = UNASSIGNED; // set all color to default (-1)
-        voisin[i][1] = 0; // reset all ammount to 0
+        voisin[i][1] = 0; // reset all ammounts to 0
     }
 }
 
 
-static void set_border(int rows, int columns, int *tab[rows], int val)
+// set the border of an array to a val
+static void set_border(int rows, int columns, int *tab[rows], int val, int border_size)
 {
-    int i;
+    int i, j;
 
-    if (rows>=1 && columns>=1)
+    if (rows<=border_size || columns<=border_size)
     {
-        // set top and bottom row
-        for (i=0 ; i<columns ; i++)
+        if (rows < columns)
+            border_size = rows;
+        else
+            border_size = columns;
+    }
+
+    for (i=0 ; i<border_size ; i++)
+    {
+        // set top and bottom rows
+        for (j=i ; j<columns-i ; j++)
         {
-            tab[0][i] = val;
-            tab[rows-1][i] = val;
+            tab[i][j] = val;
+            tab[rows-i-1][j] = val;
 
         }
-        // set left and right column
-        for (i=1 ; i<rows-1 ; i++)
+        // set left and right columns
+        for (j=i ; j<rows-i-1 ; j++)
         {
-            tab[i][0] = val;
-            tab[i][columns-1] = val;
+            tab[j][i] = val;
+            tab[j][columns-i-1] = val;
         }
     }
 }
