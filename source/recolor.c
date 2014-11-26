@@ -122,11 +122,15 @@ int main(void)
     read_image_params(format, &rows, &columns, &intensite_max);
     image = process_image(rows, columns, nbR-1, seuils, intensite_max);
 
+    //* Rendu final
     filtrage(rows, columns, image, nbF);
 
     print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max);
+    //*/
 
-    //correct();
+    /* Rendu inter
+    correct();
+    //*/
 
     free(seuils);
     free_2D_tab((void**) image, rows);
@@ -285,8 +289,7 @@ static int seuillage(float array[], int size, float val)
 // image[][] store the id of the color of the corresponding pixel
 // max_color is used to un-normalized nor_color[]
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
-                            int nb_color, float *nor_color[nb_color],
-                            int max_color)
+                            int nb_color, float *nor_color[nb_color], int max_color)
 {
     int i=0, j=0, k=0;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
