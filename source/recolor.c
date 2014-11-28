@@ -40,7 +40,8 @@
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
-#define MAX_PIXEL_PER_LINE 6 // for printing the image (add line break)
+#define MAX_PIXEL_PER_LINE 5 // printing formating
+#define CHAR_BY_SUBPIXEL 3
 
 
 int verbose = -1;
@@ -113,7 +114,7 @@ int main(void)
     int columns = 0; // refers to the image
     int intensite_max = 0;
 
-    int **image = NULL; // 2D array of the image's pixel
+    int   **image = NULL; // 2D array of the image's pixel
     float *seuils    = NULL; // seuils utilisés
     float **couleurs = NULL; // tableau des couleurs de recoloriage
 
@@ -135,8 +136,6 @@ int main(void)
     /* Rendu inter
     correct();
     // */
-
-    printf("\n");
 
     free(seuils);
     free_2D_tab((void**) image, rows);
@@ -320,17 +319,26 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
 
     // the actual image
     for (i=0 ; i<rows ; i++)
+    {
         for (j=0 ; j<columns ; j++)
         {
-            pixel_count++;
-            for (k=0 ; k<COLOR_COMPONENTS; k++)
+            if (pixel_count == MAX_PIXEL_PER_LINE) // add line break
             {
-                printf("%d ", color[image[i][j]][k]);
+                printf("\n");
+                pixel_count = 0;
             }
 
-            if (pixel_count%MAX_PIXEL_PER_LINE == 0) // add line break
-                printf("\n");
+            pixel_count++;
+
+            for (k=0 ; k<COLOR_COMPONENTS; k++)
+            {
+                printf("%*d ", CHAR_BY_SUBPIXEL, color[image[i][j]][k]);
+            }
+            printf(" ");
         }
+        pixel_count = 0;
+        printf("\n");
+    }
 
     free_2D_tab((void**) color, nb_color);
 }
