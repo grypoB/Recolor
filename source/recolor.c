@@ -23,16 +23,16 @@
 #define MAX_COLOR 1
 #define MIN_RECOLOR_NB 2
 #define MAX_RECOLOR_NB 255
-#define COLOR_COMPONENTS 3 // number of components per color (RGB format)
+#define COLOR_COMPONENTS 3 // number of components per color (3 for RGB format)
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 #define DEFAULT_COLOR 0 // color id used for border and for filtrage
 #define INIT_BORDER_SIZE 1 // the size of the black border arround the picture
 
-#define VOISIN_RADIUS 1
+#define VOISIN_RADIUS 1 // radius of the circle in which to consider adjacent cells
 #define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
 // size ot the array to store voisin values
-// (maximum of adjacent color before the result color is DEFAULt_COLOR)
+// (maximum of adjacent color before the result color is DEFAULT_COLOR)
 //                    |        number of voisin         |
 #define TAILLE_VOISIN (4*VOISIN_RADIUS*(VOISIN_RADIUS+1)) - MINIMUM_VOISIN + 1
 
@@ -49,7 +49,8 @@ int verbose = -1;
 // Read the various input and init corresponding arrays
 static float** read_recoloriage(int *nbR_adr);
 static float* read_seuils(int size_seuils, int *nb_filtrage_adr);
-static void read_image_params(char format[], int *nbL_adr, int *nbC_adr, int *intensite_max_adr);
+static void read_image_params(char format[], int *rows_adr, int *columns_adr,
+                              int *intensite_max_adr);
 static int** process_image(int rows, int columns, int size_seuils,
                            float seuils[size_seuils], int intensite_max);
 
@@ -81,14 +82,16 @@ static void scan_string(char string[]);
 // copy
 static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[rows]);
 // set border of 2D tab to a specified val
-static void set_border(int rows, int columns, int *tab[rows], int val, int border_size);
+static void set_border(int rows, int columns, int *tab[rows],
+                       int val, int border_size);
 
 // Memory allocation function
 // params : number of cell and bytes number per cell
 // output : pointer
-static void*  init_tab(unsigned long int bytes, unsigned int rows);
-static void** init_2D_tab(unsigned long int bytes, unsigned int rows, unsigned int columns);
-static void error_allocation(long unsigned int bytes);
+static void*  init_tab   (unsigned long int bytes, unsigned int rows);
+static void** init_2D_tab(unsigned long int bytes, unsigned int rows,
+                          unsigned int columns);
+static void error_allocation(unsigned long int bytes);
 // free a 2D tab (allocated by init_2D_tab)
 static void free_2D_tab(void **ptr, unsigned int rows);
 
@@ -98,7 +101,7 @@ static void erreur_nbR(int nbR);
 static void erreur_couleur(float couleur);
 static void erreur_seuil(float seuil);
 static void erreur_seuil_non_croissant(float s1, float s2);
-static void erreur_seuil_non_distinct(float s1, float s2);
+static void erreur_seuil_non_distinct (float s1, float s2);
 
 
 //-------------------------------------------------------------------
@@ -106,21 +109,22 @@ int main(void)
 {
     int nbR = 0; // nombre de couleurs de recoloriage
     int nbF = 0; // nombre de filtrages
+    int rows = 0; // refers to the image
+    int columns = 0; // refers to the image
+    int intensite_max = 0;
+
+    int **image = NULL; // 2D array of the image's pixel
     float *seuils    = NULL; // seuils utilisés
     float **couleurs = NULL; // tableau des couleurs de recoloriage
 
     char format[FORMAT_SIZE] = {0};
-    int columns = 0; // refers to the image
-    int rows = 0; // refers to the image
-    int intensite_max = 0;
-    int **image = NULL; // 2D array of the image's pixel
 
     scan_int(&verbose); // verbose value is assumed correct
 
     couleurs = read_recoloriage(&nbR);
-    seuils = read_seuils(nbR-1, &nbF);
+    seuils   = read_seuils(nbR-1, &nbF);
     read_image_params(format, &rows, &columns, &intensite_max);
-    image = process_image(rows, columns, nbR-1, seuils, intensite_max);
+    image    = process_image(rows, columns, nbR-1, seuils, intensite_max);
 
     //* Rendu final
     filtrage(rows, columns, image, nbF);
@@ -131,6 +135,8 @@ int main(void)
     /* Rendu inter
     correct();
     // */
+
+    printf("\n");
 
     free(seuils);
     free_2D_tab((void**) image, rows);
@@ -152,6 +158,7 @@ static float** read_recoloriage(int *nbR_adr)
         erreur_nbR(*nbR_adr);
 
     couleurs = (float**) init_2D_tab(sizeof(float), *nbR_adr+1, COLOR_COMPONENTS);
+
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
         couleurs[DEFAULT_COLOR][i] = BORDER_COLOR;
 
@@ -206,14 +213,15 @@ static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
 
 
 // read the image basic parameters
-static void read_image_params(char format[], int *nbL_adr, int *nbC_adr, int *intensite_max_adr)
+static void read_image_params(char format[], int *rows_adr, int *columns_adr,
+                              int *intensite_max_adr)
 {
     // all values are assumed correct
     if (verbose) printf("Entrez le code du format de l'image :\n");
     scan_string(format);
     if (verbose) printf("Entrez les dimensions de l'image :\n");
-    scan_int(nbC_adr);
-    scan_int(nbL_adr);
+    scan_int(columns_adr);
+    scan_int(rows_adr);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
     scan_int(intensite_max_adr);
 
@@ -223,7 +231,7 @@ static void read_image_params(char format[], int *nbL_adr, int *nbC_adr, int *in
 // read the image's pixels and already to a "seuillage"
 // return the pointer to image (needs to be freed)
 static int** process_image(int rows, int columns, int size_seuils,
-                          float seuils[size_seuils], int intensite_max)
+                           float seuils[size_seuils], int intensite_max)
 {
     int i=0, j=0, k=0;
     int rgb_values[COLOR_COMPONENTS] = {0};
@@ -240,7 +248,8 @@ static int** process_image(int rows, int columns, int size_seuils,
                 scan_int(&rgb_values[k]);
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
-            image[i][j] = 1 + seuillage(seuils, size_seuils, normalize(rgb_values, intensite_max));
+            image[i][j] = 1 + seuillage(seuils, size_seuils,
+                                        normalize(rgb_values, intensite_max));
         }
     }
 
@@ -333,12 +342,9 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     int i, j, k, l;
     int countF = 0; // count the number of filtrage done
 
+    // store in each row a neighbooring color and the ammount of it
     int voisin[TAILLE_VOISIN][2] = {{0}};
     int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
-
-    /* voisin[TAILLE_VOISIN][2]
-        Store in each row a neighbooring color and the ammount of it
-    */
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
         set_border(rows, columns, temp_image, DEFAULT_COLOR, INIT_BORDER_SIZE);
@@ -348,12 +354,15 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
         {
             for (j=1; j<columns-1 ; j++)
             {
-                temp_image[i][j] = UNASSIGNED; // reset values for current pixel
+                temp_image[i][j] = UNASSIGNED;
                 reset_voisin(voisin);
 
-                for (k=i-VOISIN_RADIUS ; k<=i+VOISIN_RADIUS ; k++) // cycle through all voisin
+                // cycle through all voisin
+                for (k=i-VOISIN_RADIUS ; k<=i+VOISIN_RADIUS ; k++)
                 {
-                    for (l=j-VOISIN_RADIUS ; l<=j+VOISIN_RADIUS && temp_image[i][j]==UNASSIGNED ; l++)
+                    for (l=j-VOISIN_RADIUS ;
+                         l<=j+VOISIN_RADIUS && temp_image[i][j]==UNASSIGNED ;
+                         l++)
                     {
                         if (k!=i || l!=j) // if not equal to center pixel
                         {
@@ -362,7 +371,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
                         }
                     }
                 }
-                // if not decided yet (if voisin colors_nb <= TAILLE_VOISIN, but none >= MINIMUM_VOISIN)
+                // if not decided yet
                 if (temp_image[i][j] == UNASSIGNED)
                 {
                     temp_image[i][j] = DEFAULT_COLOR;
@@ -379,11 +388,11 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 
 
 // update voisin[][] with given params :
-// params : increase the color by ammount (find a new slot for it if not already assigned
+// params : increase the color by ammount
 // return : color whci should be the result pixel given the data in voisin
 // e.g : 1 - if a color >= MAXIMUM_VOISIN, return this color
 //       2 - if all color slots are already assigned, return the DEFAULT_COLOR
-//           (because none can reach MINIMUM_VOISIN given the definition of TAILLE_VOISIN)
+//            (none can reach MINIMUM_VOISIN given the definition of TAILLE_VOISIN)
 static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount)
 {
     int i;
@@ -512,7 +521,8 @@ static void* init_tab(unsigned long int bytes, unsigned int rows)
 }
 
 // Allocate memory for a 2D tab
-static void** init_2D_tab(unsigned long int bytes, unsigned int rows, unsigned int columns)
+static void** init_2D_tab(unsigned long int bytes, unsigned int rows,
+                          unsigned int columns)
 {
     int i;
     void **ptr = NULL;
@@ -544,7 +554,7 @@ static void free_2D_tab(void **ptr, unsigned int rows)
 }
 
 // In case malloc fails
-static void error_allocation(long unsigned int bytes)
+static void error_allocation(unsigned long int bytes)
 {
         printf("ERROR : Memory allocation failed (%lu bytes)\n", bytes);
         exit(EXIT_FAILURE);
