@@ -47,7 +47,7 @@
 int verbose = -1;
 
 
-// Read the various input and init corresponding arrays
+// Read the various inputs
 static int  read_recoloriage_nb();
 static void read_colors(int size, float *colors[size]);
 static void read_seuils(int size, float seuils[size]);
@@ -60,7 +60,7 @@ static void process_image(int rows, int columns, int *image[rows], int size_seui
 // from a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max);
 
-// seuillage function in logarithm complexity
+// seuillage fct
 // params : sorted array, size of array, val to look for
 // output : first x such as val > array[x]
 static int seuillage(float array[], int size, float val);
@@ -150,6 +150,8 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
+
+// return the number of recoloring colors
 static int read_recoloriage_nb()
 {
     int nbR = 0;
@@ -162,6 +164,9 @@ static int read_recoloriage_nb()
     return nbR;
 }
 
+
+// read the various colors used to recolor the image
+// init the border color
 static void read_colors(int size, float *colors[size])
 {
     int i=0, j=0;
@@ -183,6 +188,7 @@ static void read_colors(int size, float *colors[size])
 }
 
 
+// read the different seuils to use
 static void read_seuils(int size, float seuils[size])
 {
     int i = 0;
@@ -209,6 +215,7 @@ static void read_seuils(int size, float seuils[size])
 }
 
 
+// return the number of filtrage to be made
 static int read_filtrage()
 {
     int nb_filtrage = 0;
@@ -218,7 +225,6 @@ static int read_filtrage()
 
     return nb_filtrage;
 }
-
 
 
 // read the image basic parameters
@@ -238,7 +244,6 @@ static void read_image_params(char format[], int *rows_adr, int *columns_adr,
 
 
 // read the image's pixels and already to a "seuillage"
-// return the pointer to image (needs to be freed)
 static void process_image(int rows, int columns, int *image[rows], int size_seuils,
                            float seuils[size_seuils], int intensite_max)
 {
