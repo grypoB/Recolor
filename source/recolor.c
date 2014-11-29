@@ -48,12 +48,14 @@ int verbose = -1;
 
 
 // Read the various input and init corresponding arrays
-static float** read_recoloriage(int *nbR_adr);
-static float* read_seuils(int size_seuils, int *nb_filtrage_adr);
+static int  read_recoloriage_nb();
+static void read_colors(int size, float *colors[size]);
+static void read_seuils(int size, float seuils[size]);
+static int  read_filtrage();
 static void read_image_params(char format[], int *rows_adr, int *columns_adr,
                               int *intensite_max_adr);
-static int** process_image(int rows, int columns, int size_seuils,
-                           float seuils[size_seuils], int intensite_max);
+static void process_image(int rows, int columns, int *image[rows], int size_seuils,
+                          float seuils[size_seuils], int intensite_max);
 
 // from a pixel's RGB values, return a single normalized value
 static float normalize(int rgb_values[], int max);
@@ -72,12 +74,6 @@ static void reset_voisin(int voisin[TAILLE_VOISIN][2]);
 // print the image out of filtrage fct
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color], int max_color);
-
-// Input function, act as scanf, but checks if the return value is correct 
-// params : pointer to var
-static void scan_int(int *nb_adress);
-static void scan_float(float *nb_adress);
-static void scan_string(char string[]);
 
 // Tab utility fct :
 // copy
@@ -120,12 +116,23 @@ int main(void)
 
     char format[FORMAT_SIZE] = {0};
 
-    scan_int(&verbose); // verbose value is assumed correct
 
-    couleurs = read_recoloriage(&nbR);
-    seuils   = read_seuils(nbR-1, &nbF);
+    scanf("%d", &verbose); // verbose value is assumed correct
+
+    nbR = read_recoloriage_nb();
+
+    couleurs = (float **) init_2D_tab(sizeof(float), nbR+1, COLOR_COMPONENTS);
+    seuils   = (float * ) init_tab   (sizeof(float), nbR-1);
+
+    read_colors(nbR+1, couleurs);
+    read_seuils(nbR-1, seuils);
+
+    nbF = read_filtrage();
     read_image_params(format, &rows, &columns, &intensite_max);
-    image    = process_image(rows, columns, nbR-1, seuils, intensite_max);
+
+    image = (int **) init_2D_tab(sizeof(int), rows, columns);
+
+    process_image(rows, columns, image, nbR-1, seuils, intensite_max);
 
     //* Rendu final
     filtrage(rows, columns, image, nbF);
@@ -143,52 +150,47 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
-
-// read the colors of the "recoloriage"
-// return pointer to 2D array of colors (needs to be freed)
-static float** read_recoloriage(int *nbR_adr)
+static int read_recoloriage_nb()
 {
-    int i=0, j=0;
-    float **couleurs = NULL;
+    int nbR = 0;
 
     if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
-    scan_int(nbR_adr);
-    if (*nbR_adr<MIN_RECOLOR_NB || *nbR_adr>MAX_RECOLOR_NB)
-        erreur_nbR(*nbR_adr);
+    scanf("%d", &nbR);
+    if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
+        erreur_nbR(nbR);
 
-    couleurs = (float**) init_2D_tab(sizeof(float), *nbR_adr+1, COLOR_COMPONENTS);
+    return nbR;
+}
+
+static void read_colors(int size, float *colors[size])
+{
+    int i=0, j=0;
 
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
-        couleurs[DEFAULT_COLOR][i] = BORDER_COLOR;
+        colors[DEFAULT_COLOR][i] = BORDER_COLOR;
 
     if (verbose) printf("Entrez les %d couleurs de recoloriage "
-                        "(format RGB normalisé) :\n", *nbR_adr);
-    for (i=1 ; i<*nbR_adr+1 ; i++) // scan color
+                        "(format RGB normalisé) :\n", size-1);
+    for (i=1 ; i<size ; i++) // scan color
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
-            scan_float(&couleurs[i][j]);
-            if (couleurs[i][j]<MIN_COLOR || couleurs[i][j]>MAX_COLOR)
-                erreur_couleur(couleurs[i][j]);
+            scanf("%f", &colors[i][j]);
+            if (colors[i][j]<MIN_COLOR || colors[i][j]>MAX_COLOR)
+                erreur_couleur(colors[i][j]);
         }
     }
-
-    return couleurs;
 }
 
 
-// read the various seuils and check if they are corect
-// also reads the number of filtrage
-// return pointer to array seuils (needs to be freed)
-static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
+static void read_seuils(int size, float seuils[size])
 {
-    int i=0;
-    float *seuils = (float*) init_tab(sizeof(float), size_seuils);
+    int i = 0;
 
-    if (verbose) printf("Entrez les %d seuils de recoloriage :\n", size_seuils);
-    for (i=0 ; i<size_seuils ; i++) // scan seuils
+    if (verbose) printf("Entrez les %d seuils de recoloriage :\n", size);
+    for (i=0 ; i<size ; i++) // scan seuils
     {
-        scan_float(&seuils[i]);
+        scanf("%f", &seuils[i]);
         if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
             erreur_seuil(seuils[i]);
         else if (seuils[i]<MIN_SEUIL+TOLERANCE_SEUIL)
@@ -204,11 +206,19 @@ static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
         }
     }
 
-    if (verbose) printf("Entrez le nombre de filtrage :\n");
-    scan_int(nb_filtrage_adr); // filtrage nb is assumed correct
-
-    return seuils;
 }
+
+
+static int read_filtrage()
+{
+    int nb_filtrage = 0;
+
+    if (verbose) printf("Entrez le nombre de filtrage :\n");
+    scanf("%d", &nb_filtrage); // filtrage nb is assumed correct
+
+    return nb_filtrage;
+}
+
 
 
 // read the image basic parameters
@@ -217,24 +227,23 @@ static void read_image_params(char format[], int *rows_adr, int *columns_adr,
 {
     // all values are assumed correct
     if (verbose) printf("Entrez le code du format de l'image :\n");
-    scan_string(format);
+    scanf("%s", format);
     if (verbose) printf("Entrez les dimensions de l'image :\n");
-    scan_int(columns_adr);
-    scan_int(rows_adr);
+    scanf("%d", columns_adr);
+    scanf("%d", rows_adr);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
-    scan_int(intensite_max_adr);
+    scanf("%d", intensite_max_adr);
 
 }
 
 
 // read the image's pixels and already to a "seuillage"
 // return the pointer to image (needs to be freed)
-static int** process_image(int rows, int columns, int size_seuils,
+static void process_image(int rows, int columns, int *image[rows], int size_seuils,
                            float seuils[size_seuils], int intensite_max)
 {
     int i=0, j=0, k=0;
     int rgb_values[COLOR_COMPONENTS] = {0};
-    int **image = (int**) init_2D_tab(sizeof(int), rows, columns);
 
     if (verbose) printf("Entrez les valeurs des couleurs des pixels :\n");
     for (i=0 ; i<rows ; i++)
@@ -244,15 +253,13 @@ static int** process_image(int rows, int columns, int size_seuils,
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
                 // pixel values are assumed correct
-                scan_int(&rgb_values[k]);
+                scanf("%d", &rgb_values[k]);
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
             image[i][j] = 1 + seuillage(seuils, size_seuils,
                                         normalize(rgb_values, intensite_max));
         }
     }
-
-    return image;
 }
 
 
@@ -352,7 +359,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 
     // store in each row a neighbooring color and the ammount of it
     int voisin[TAILLE_VOISIN][2] = {{0}};
-    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
+    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns);
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
         set_border(rows, columns, temp_image, DEFAULT_COLOR, INIT_BORDER_SIZE);
@@ -442,7 +449,8 @@ static void reset_voisin(int voisin[TAILLE_VOISIN][2])
 
 
 // set the border of an array to a val
-static void set_border(int rows, int columns, int *tab[rows], int val, int border_size)
+static void set_border(int rows, int columns, int *tab[rows],
+                       int val, int border_size)
 {
     int i, j;
 
@@ -481,40 +489,6 @@ static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[ro
     for (i=0 ; i<rows ; i++)
         for (j=0 ; j<columns ; j++)
             target[i][j] = source[i][j];
-}
-
-// Scan an integer from the default input and exit on failure
-static void scan_int(int *nb_adress)
-{
-    if (scanf("%d", nb_adress) != 1)
-    {
-        printf("ERROR : Input failed (expected [%%d])\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-// Scan a float from the default input and exit on failure
-static void scan_float(float *nb_adress)
-{
-    if (scanf("%f", nb_adress) != 1)
-    {
-        printf("ERROR : Input failed (expected [%%f])\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-// Scan a string from the default input and exit on failure
-/* RISKY
- * If the string is longer than the memory allowed
- * it will override values in the memory
- */
-static void scan_string(char string[])
-{
-    if (scanf("%s", string) != 1)
-    {
-        printf("ERROR : Input failed (expected a string)\n");
-        exit(EXIT_FAILURE);
-    }
 }
 
 
