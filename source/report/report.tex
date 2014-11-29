@@ -1,0 +1,93 @@
+\documentclass[a4paper]{report} % set paper size
+
+\usepackage[utf8]{inputenc}
+\usepackage {url}
+\usepackage[top=2.54cm, bottom=2.54cm, left=2.54cm, right=2.54cm]{geometry} % set margin
+\usepackage{amsfonts} % for set names
+\usepackage{amsmath} % for equation system
+\usepackage{amsthm} % for theorem block
+\usepackage{fixltx2e} % for subscript
+\usepackage{fancyhdr} % for footer/headline modification
+\usepackage{xcolor}
+\usepackage[ruled,vlined]{algorithm2e} % for algorithm integration
+
+\pagestyle{fancyplain} % for footing modification on all pages
+%\fancyhf{}
+\renewcommand{\headrulewidth}{0pt} % remove decorative lign
+\fancyhead[L]{Alexandre Devienne BA1 EL 2014}
+
+\begin{document}
+
+\section*{Recolor}
+Blabla bla
+asdf
+asdf
+asd
+fa
+sdfas
+
+sdfasdfasdfsa saf dsa fasd f
+asfadsf
+asdfasd
+fasdfasdf
+
+\begin{algorithm}
+    \KwData{$image$ seuilée, nombre de filtrage}
+    \KwOut{Image filtrée}
+    \BlankLine
+    Let $temp$ a matrix of colors and size the original image\;
+    Let $pixel$, $neighboor$ and $val$ colors\;
+
+    \BlankLine
+    Set the border of $temp$ to black\;
+    \For{$i \leftarrow 1$ \KwTo filtrage}{
+        \For{each $pixel$ in $image$}{
+            $val \leftarrow $ UNASSIGNED\;
+            \For{each $neighboor$ of $pixel$} {
+                \While{$val = $ UNASSIGNED} {
+                    $val \leftarrow $ \; 
+                }
+            }
+            \If{$val = $ UNASSIGNED} {
+                $val \leftarrow$ black \;
+            }
+            Set corresponding $pixel$ of $temp$ to $val$\; 
+        }
+        $image \leftarrow temp$\;
+    }
+\caption{Filtrage algorithm}
+\end{algorithm}
+
+\begin{algorithm}
+\SetKwProg{Fn}{Function}{}{}
+\Fn(\tcc*[f]{check if a binomial coefficient is even}){isEven($n$, $k$)}
+{
+% \KwData{The $n$ and $k$ of the binomial coefficient to check}
+% \KwOut{Return true if $\binom{n}{k}$ is even, else false}
+
+ \BlankLine
+ Initialize $count$, $temp1$ and $temp2$ as integers\;
+ \BlankLine
+ $count \leftarrow 0$ \tcc*[r]{\emph{count} counts the number of time $\binom{n}{k}$ can be divided by 2}
+ \If{$n \geq 2$}
+ {
+  \For(\tcc*[f]{counts how many times $\frac{n!}{k!}$ can be divided by 2}){$temp1 \leftarrow k+1$ \KwTo $n$}{
+   $temp2 \leftarrow temp1$\;
+   \While{($temp2 \equiv 0 \pmod 2$) and ($temp2 \neq 0$)}{
+    $temp2 \leftarrow \frac{temp2}{2}$\;
+    $count \leftarrow count + 1$ \tcc*[r]{store this number in \emph{count}}}
+   }
+  \For(\tcc*[f]{repeat the process for $(n-k)!$}){$temp1 \leftarrow 2$ \KwTo $n-k$}{
+   $temp2 \leftarrow temp1$\;
+   \While{($temp2 \equiv 0 \pmod 2$) and ($temp2 \neq 0$)}{
+    $temp2 \leftarrow \frac{temp2}{2}$\;
+    $count \leftarrow count - 1$ \tcc*[r]{decrement \emph{count} by this ammount}}
+   }
+ }
+ \BlankLine
+ \eIf{$count > 0$}{\KwRet{true}\;}
+ {\KwRet{false}\;}
+}
+\caption{isEven function}
+\end{algorithm}
+\end{document}
