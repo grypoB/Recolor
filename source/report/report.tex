@@ -19,33 +19,29 @@
 \begin{document}
 
 \section*{Recolor}
-Blabla bla
-asdf
-asdf
-asd
-fa
-sdfas
+Describe program
 
-sdfasdfasdfsa saf dsa fasd f
-asfadsf
-asdfasd
-fasdfasdf
+show abstraction/re-usage of fct
+
+analyse complexity of filtrage
 
 \begin{algorithm}
-    \KwData{$image$ seuilée, nombre de filtrage}
-    \KwOut{Image filtrée}
+    \KwData{$image$ seuilée, $nbF$ number of filtrage}
+    \KwResult{Image filtrée}
     \BlankLine
     Let $temp$ a matrix of colors and size the original image\;
     Let $pixel$, $neighboor$ and $val$ colors\;
+    Let $T$ a dictionnary as described in function below and of size $3$\;
 
     \BlankLine
     Set the border of $temp$ to black\;
-    \For{$i \leftarrow 1$ \KwTo filtrage}{
-        \For{each $pixel$ in $image$}{
+    \For{$i \leftarrow 1$ \KwTo $nbF$}{
+        \For{each $pixel$ in $image$ (border excepted)}{
             $val \leftarrow $ UNASSIGNED\;
+            reset $T$ (remove all entry and set all integers to 0)\;
             \For{each $neighboor$ of $pixel$} {
-                \While{$val = $ UNASSIGNED} {
-                    $val \leftarrow $ \; 
+                \If{$val = $ UNASSIGNED} {
+                    $val \leftarrow $ \emph{insertInDictionnary}($neighboor$, $T$)\; 
                 }
             }
             \If{$val = $ UNASSIGNED} {
@@ -55,39 +51,31 @@ fasdfasdf
         }
         $image \leftarrow temp$\;
     }
+
+\BlankLine
+\SetKwProg{Fn}{Function}{}{}
+\Fn{insertInDictionnary($color$, $T$)}
+{
+\KwIn{$color$ to insert in dictionnary $T$ of limited size, and which can contain a integer for each entry (colors)}
+\KwOut{Color of resulting cell, or UNASSIGNED if cannot decide yet}
+\BlankLine
+\uIf{$color$ already in $T$} {
+    increase corresponding integer by 1\;
+    \If{$integer > 6$} {
+        \KwRet $color$
+    }
+}
+\uElseIf{$T$ full} {
+    \KwRet black\;
+}
+\Else
+{
+    Store $color$ in new entry of $T$\;
+    Set correponding integer to 1\;
+}
+\KwRet UNASSIGNED
+}
 \caption{Filtrage algorithm}
 \end{algorithm}
 
-\begin{algorithm}
-\SetKwProg{Fn}{Function}{}{}
-\Fn(\tcc*[f]{check if a binomial coefficient is even}){isEven($n$, $k$)}
-{
-% \KwData{The $n$ and $k$ of the binomial coefficient to check}
-% \KwOut{Return true if $\binom{n}{k}$ is even, else false}
-
- \BlankLine
- Initialize $count$, $temp1$ and $temp2$ as integers\;
- \BlankLine
- $count \leftarrow 0$ \tcc*[r]{\emph{count} counts the number of time $\binom{n}{k}$ can be divided by 2}
- \If{$n \geq 2$}
- {
-  \For(\tcc*[f]{counts how many times $\frac{n!}{k!}$ can be divided by 2}){$temp1 \leftarrow k+1$ \KwTo $n$}{
-   $temp2 \leftarrow temp1$\;
-   \While{($temp2 \equiv 0 \pmod 2$) and ($temp2 \neq 0$)}{
-    $temp2 \leftarrow \frac{temp2}{2}$\;
-    $count \leftarrow count + 1$ \tcc*[r]{store this number in \emph{count}}}
-   }
-  \For(\tcc*[f]{repeat the process for $(n-k)!$}){$temp1 \leftarrow 2$ \KwTo $n-k$}{
-   $temp2 \leftarrow temp1$\;
-   \While{($temp2 \equiv 0 \pmod 2$) and ($temp2 \neq 0$)}{
-    $temp2 \leftarrow \frac{temp2}{2}$\;
-    $count \leftarrow count - 1$ \tcc*[r]{decrement \emph{count} by this ammount}}
-   }
- }
- \BlankLine
- \eIf{$count > 0$}{\KwRet{true}\;}
- {\KwRet{false}\;}
-}
-\caption{isEven function}
-\end{algorithm}
 \end{document}
