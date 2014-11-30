@@ -27,7 +27,6 @@
 
 #define BORDER_COLOR 0 // RGB normalized format for the border color
 #define DEFAULT_COLOR 0 // color id used for border and for filtrage
-#define INIT_BORDER_SIZE 1 // the size of the black border arround the picture
 
 #define VOISIN_RADIUS 1 // radius of the circle in which to consider adjacent cells
 #define MINIMUM_VOISIN 6 // number of voisin in order to take the corresponding color
@@ -355,12 +354,13 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
-        set_border(rows, columns, temp_image, DEFAULT_COLOR, INIT_BORDER_SIZE);
+        set_border(rows, columns, temp_image, DEFAULT_COLOR, VOISIN_RADIUS);
     for (countF=0; countF<nb_filtrage ; countF++)
     {
-        for (i=1; i<rows-1 ; i++) // cycle through all pixels (border excepted)
+        // cycle through all pixels (border excepted)
+        for (i=VOISIN_RADIUS; i<rows-VOISIN_RADIUS ; i++)
         {
-            for (j=1; j<columns-1 ; j++)
+            for (j=VOISIN_RADIUS; j<columns-VOISIN_RADIUS ; j++)
             {
                 temp_image[i][j] = UNASSIGNED;
                 reset_voisin(voisin);
