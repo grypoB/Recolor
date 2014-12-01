@@ -18,20 +18,46 @@
 
 \begin{document}
 
-\section*{Recolor}
-Describe program
+\section*{Autumn programming project : Recolor}
+The program's organisation is as follows :
+\begin{enumerate}
+\item Read the inputs
+
+The entire input is divided into 5 functions which read each section separetly (i.e.: all recoloring color together).
+In alternance to the call of these functions, the tables and matrixes in which to store the data are dynamicly allocated in main using custom functions.
+
+\item Process the inputs
+    \begin{enumerate}
+    \item Normalize and compare to the thresholds each pixels while reading them 
+    \item Filtrage algorithm 
+    \end{enumerate}
+\item Print the output (a single function does this job)
+\end{enumerate}
+
+To furthermore show the abstraction made using function in this program we can consider the very basic functions : set\_border, copy\_2D\_tab and reset\_voisin.
+Even though they are only called once in the program they 
+
+
+re-utilisation :
+dichotomie like search for seuillage
+dynamic memory allocation for matrix and tables (even checks if the allocation is sucesful)
 
 show abstraction/re-usage of fct
+One particular thing to note is that my seuillage function is based on dicotomie search
 
 analyse complexity of filtrage
+set border : 2 + 2nbC + 2 nbL
+1 + nbF * (nbL * nbC * (6+1 + 9 * 9+ 2) + nbC*nbL)
+tot = nbF*nbC*nbL (90)
+
 
 \begin{algorithm}
     \KwData{$image$ seuilée, $nbF$ number of filtrage}
     \KwResult{Image filtrée}
     \BlankLine
-    Let $temp$ a matrix of colors and size the original image\;
-    Let $pixel$, $neighboor$ and $val$ colors\;
-    Let $T$ a dictionnary as described in function below and of size $3$\;
+    Let $temp$ be a matrix of colors and size the original image\;
+    Let $pixel$, $neighboor$ and $val$ be colors\;
+    Let $T$ be a dictionnary as described in function below and of size $3$\;
 
     \BlankLine
     Set the border of $temp$ to black\;
@@ -60,7 +86,7 @@ analyse complexity of filtrage
 \KwOut{Color of resulting cell, or UNASSIGNED if cannot decide yet}
 \BlankLine
 \uIf{$color$ already in $T$} {
-    increase corresponding integer by 1\;
+    increment corresponding integer by 1\;
     \If{$integer > 6$} {
         \KwRet $color$
     }
