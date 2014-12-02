@@ -54,8 +54,8 @@ static void    read_image_params(char format[], int *rows_adr, int *columns_adr,
 static int**   process_image(int rows, int columns, int size_seuils,
                              float seuils[size_seuils], int intensite_max);
 
-// from a pixel's RGB values, return a single grayscale value between 0 and 1
-static float grayscale(int rgb_values[], int max);
+// from a pixel's RGB values, return a single greyscale value between 0 and 1
+static float greyscale(int rgb_values[], int max);
 
 // params : sorted array, size of array, val to look for
 // output : smallest x such as val < array[x]
@@ -242,7 +242,7 @@ static int** process_image(int rows, int columns, int size_seuils,
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
             image[i][j] = 1 + seuillage(seuils, size_seuils,
-                                        grayscale(rgb_values, intensite_max));
+                                        greyscale(rgb_values, intensite_max));
         }
     }
 
@@ -250,8 +250,8 @@ static int** process_image(int rows, int columns, int size_seuils,
 }
 
 
-// From a pixel's RGB values, return a single grayscale value between 0 and 1
-static float grayscale(int rgb_values[], int max)
+// From a pixel's RGB values, return a single greyscale value between 0 and 1
+static float greyscale(int rgb_values[], int max)
 {
     int i;
     float result = 0;
