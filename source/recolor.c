@@ -48,23 +48,22 @@ int verbose = -1;
 
 // Read the various input and init corresponding arrays
 static float** read_recoloriage(int *nbR_adr);
-static float* read_seuils(int size_seuils, int *nb_filtrage_adr);
-static void read_image_params(char format[], int *rows_adr, int *columns_adr,
-                              int *intensite_max_adr);
-static int** process_image(int rows, int columns, int size_seuils,
-                           float seuils[size_seuils], int intensite_max);
+static float*  read_seuils(int size_seuils, int *nb_filtrage_adr);
+static void    read_image_params(char format[], int *rows_adr, int *columns_adr,
+                                 int *intensite_max_adr);
+static int**   process_image(int rows, int columns, int size_seuils,
+                             float seuils[size_seuils], int intensite_max);
 
-// from a pixel's RGB values, return a single normalized value
-static float normalize(int rgb_values[], int max);
+// from a pixel's RGB values, return a single grayscale value between 0 and 1
+static float grayscale(int rgb_values[], int max);
 
-// seuillage function in logarithm complexity
 // params : sorted array, size of array, val to look for
-// output : first x such as val > array[x]
+// output : smallest x such as val < array[x]
 static int seuillage(float array[], int size, float val);
 
 // filtrage algorithm
 static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage);
-// fct to manipulate voisin[][] which stores value of neighbooring cells
+// fct to manipulate voisin[][] which stores value of neighboring cells
 static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount);
 static void reset_voisin(int voisin[TAILLE_VOISIN][2]);
 
@@ -123,8 +122,7 @@ int main(void)
 
     //* Rendu final
     filtrage(rows, columns, image, nbF);
-
-    print_image_ppm(format , rows, columns, image, nbR+1, couleurs, intensite_max);
+    print_image_ppm(format, rows, columns, image, nbR+1, couleurs, intensite_max);
     // */
 
     /* Rendu inter
@@ -143,21 +141,22 @@ int main(void)
 static float** read_recoloriage(int *nbR_adr)
 {
     int i=0, j=0;
+    int nbR = 0;
     float **couleurs = NULL;
 
     if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
-    scanf("%d", nbR_adr);
-    if (*nbR_adr<MIN_RECOLOR_NB || *nbR_adr>MAX_RECOLOR_NB)
-        erreur_nbR(*nbR_adr);
+    scanf("%d", &nbR);
+    if (nbR<MIN_RECOLOR_NB || nbR>MAX_RECOLOR_NB)
+        erreur_nbR(nbR);
 
-    couleurs = (float**) init_2D_tab(sizeof(float), *nbR_adr+1, COLOR_COMPONENTS);
+    couleurs = (float**) init_2D_tab(sizeof(float), nbR+1, COLOR_COMPONENTS);
 
     for (i=0 ; i<COLOR_COMPONENTS ; i++) // init border color
         couleurs[DEFAULT_COLOR][i] = BORDER_COLOR;
 
     if (verbose) printf("Entrez les %d couleurs de recoloriage "
-                        "(format RGB normalisé) :\n", *nbR_adr);
-    for (i=1 ; i<*nbR_adr+1 ; i++) // scan color
+                        "(format RGB normalisé) :\n", nbR);
+    for (i=1 ; i<nbR+1 ; i++) // scan color
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
@@ -167,11 +166,12 @@ static float** read_recoloriage(int *nbR_adr)
         }
     }
 
+    *nbR_adr = nbR;
     return couleurs;
 }
 
 
-// read the various seuils and check if they are corect
+// read the various seuils and check if they are correct
 // also reads the number of filtrage
 // return pointer to array seuils (needs to be freed)
 static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
@@ -242,7 +242,7 @@ static int** process_image(int rows, int columns, int size_seuils,
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
             image[i][j] = 1 + seuillage(seuils, size_seuils,
-                                        normalize(rgb_values, intensite_max));
+                                        grayscale(rgb_values, intensite_max));
         }
     }
 
@@ -250,8 +250,8 @@ static int** process_image(int rows, int columns, int size_seuils,
 }
 
 
-// From a pixel's RGB values, return a single normalized value
-static float normalize(int rgb_values[], int max)
+// From a pixel's RGB values, return a single grayscale value between 0 and 1
+static float grayscale(int rgb_values[], int max)
 {
     int i;
     float result = 0;
@@ -264,7 +264,8 @@ static float normalize(int rgb_values[], int max)
 
 
 // Return in which interval a val is inside a tab
-// Counts from 0 and interval of type [x, y[
+// output : smallest x such as val < array[x]
+// if val > array[size-1], return size
 static int seuillage(float array[], int size, float val)
 {
     
@@ -295,28 +296,27 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
 {
     int i=0, j=0, k=0;
     int pixel_count = 0; // to add line-break after MAX_PIXEL_PER_LINE lines
-    // to store un-normalized value of the color
+    // to store the scaled value of the color
     int **color = (int**) init_2D_tab(sizeof(int), nb_color, COLOR_COMPONENTS);
 
-    // un-normalize nor_color
+    // to scale nor_color
     for (i=0 ; i<nb_color ; i++)
         for (j=0 ; j<COLOR_COMPONENTS ; j++)
         {
             color[i][j] = nor_color[i][j] * max_color;
         }
 
-    // print the image
     // general info about the image
     printf("%s\n", format);
     printf("%d %d\n", columns, rows);
     printf("%d\n", max_color);
 
-    // the actual image
+    // the actual pixels
     for (i=0 ; i<rows ; i++)
     {
         for (j=0 ; j<columns ; j++)
         {
-            if (pixel_count == MAX_PIXEL_PER_LINE) // add line break
+            if (pixel_count == MAX_PIXEL_PER_LINE)
             {
                 printf("\n");
                 pixel_count = 0;
@@ -328,7 +328,7 @@ static void print_image_ppm(char format[], int rows, int columns, int *image[row
             {
                 printf("%*d ", CHAR_BY_SUBPIXEL, color[image[i][j]][k]);
             }
-            printf(" ");
+            printf(" "); // some more spacing between pixels
         }
         pixel_count = 0;
         printf("\n");
@@ -344,7 +344,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
     int i, j, k, l;
     int countF = 0; // count the number of filtrage done
 
-    // store in each row a neighbooring color and the ammount of it
+    // store in each row a neighboring color and the ammount of it
     int voisin[TAILLE_VOISIN][2] = {{0}};
     int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
 
@@ -360,7 +360,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
                 temp_image[i][j] = UNASSIGNED;
                 reset_voisin(voisin);
 
-                // cycle through all voisin
+                // cycle through all neighbors
                 for (k=i-VOISIN_RADIUS ; k<=i+VOISIN_RADIUS ; k++)
                 {
                     for (l=j-VOISIN_RADIUS ;
@@ -443,10 +443,7 @@ static void set_border(int rows, int columns, int *tab[rows], int val, int borde
 
     if (rows<=border_size || columns<=border_size)
     {
-        if (rows < columns)
-            border_size = rows;
-        else
-            border_size = columns;
+        border_size = (rows<columns ? rows : columns);
     }
 
     for (i=0 ; i<border_size ; i++)
