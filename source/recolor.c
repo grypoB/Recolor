@@ -72,11 +72,6 @@ static void reset_voisin(int voisin[TAILLE_VOISIN][2]);
 static void print_image_ppm(char format[], int rows, int columns, int *image[rows],
                             int nb_color, float *nor_color[nb_color], int max_color);
 
-// Input function, act as scanf, but checks if the return value is correct 
-// params : pointer to var
-static void scan_int(int *nb_adress);
-static void scan_float(float *nb_adress);
-static void scan_string(char string[]);
 
 // Tab utility fct :
 // copy
@@ -119,7 +114,7 @@ int main(void)
 
     char format[FORMAT_SIZE] = {0};
 
-    scan_int(&verbose); // verbose value is assumed correct
+    scanf("%d", &verbose); // verbose value is assumed correct
 
     couleurs = read_recoloriage(&nbR);
     seuils   = read_seuils(nbR-1, &nbF);
@@ -151,7 +146,7 @@ static float** read_recoloriage(int *nbR_adr)
     float **couleurs = NULL;
 
     if (verbose) printf("Entrez le nombre de couleurs de recoloriage :\n");
-    scan_int(nbR_adr);
+    scanf("%d", nbR_adr);
     if (*nbR_adr<MIN_RECOLOR_NB || *nbR_adr>MAX_RECOLOR_NB)
         erreur_nbR(*nbR_adr);
 
@@ -166,7 +161,7 @@ static float** read_recoloriage(int *nbR_adr)
     {
         for (j=0 ; j<COLOR_COMPONENTS ; j++) // scan RBG components
         {
-            scan_float(&couleurs[i][j]);
+            scanf("%f", &couleurs[i][j]);
             if (couleurs[i][j]<MIN_COLOR || couleurs[i][j]>MAX_COLOR)
                 erreur_couleur(couleurs[i][j]);
         }
@@ -187,7 +182,7 @@ static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
     if (verbose) printf("Entrez les %d seuils de recoloriage :\n", size_seuils);
     for (i=0 ; i<size_seuils ; i++) // scan seuils
     {
-        scan_float(&seuils[i]);
+        scanf("%f", &seuils[i]);
         if (seuils[i]<=MIN_SEUIL || seuils[i]>=MAX_SEUIL)
             erreur_seuil(seuils[i]);
         else if (seuils[i]<MIN_SEUIL+TOLERANCE_SEUIL)
@@ -204,7 +199,7 @@ static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
     }
 
     if (verbose) printf("Entrez le nombre de filtrage :\n");
-    scan_int(nb_filtrage_adr); // filtrage nb is assumed correct
+    scanf("%d", nb_filtrage_adr); // filtrage nb is assumed correct
 
     return seuils;
 }
@@ -216,12 +211,12 @@ static void read_image_params(char format[], int *rows_adr, int *columns_adr,
 {
     // all values are assumed correct
     if (verbose) printf("Entrez le code du format de l'image :\n");
-    scan_string(format);
+    scanf("%s", format);
     if (verbose) printf("Entrez les dimensions de l'image :\n");
-    scan_int(columns_adr);
-    scan_int(rows_adr);
+    scanf("%d", columns_adr);
+    scanf("%d", rows_adr);
     if (verbose) printf("Entrez l'intensité max pour la couleur : \n");
-    scan_int(intensite_max_adr);
+    scanf("%d", intensite_max_adr);
 
 }
 
@@ -243,7 +238,7 @@ static int** process_image(int rows, int columns, int size_seuils,
             for (k=0 ; k<COLOR_COMPONENTS ; k++)
             {
                 // pixel values are assumed correct
-                scan_int(&rgb_values[k]);
+                scanf("%d", &rgb_values[k]);
             }
             // seuillage : add 1 because MIN_SEUIL is not in array seuils
             image[i][j] = 1 + seuillage(seuils, size_seuils,
@@ -481,40 +476,6 @@ static void copy_2D_tab(int rows, int columns, int *source[rows], int *target[ro
     for (i=0 ; i<rows ; i++)
         for (j=0 ; j<columns ; j++)
             target[i][j] = source[i][j];
-}
-
-// Scan an integer from the default input and exit on failure
-static void scan_int(int *nb_adress)
-{
-    if (scanf("%d", nb_adress) != 1)
-    {
-        printf("ERROR : Input failed (expected [%%d])\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-// Scan a float from the default input and exit on failure
-static void scan_float(float *nb_adress)
-{
-    if (scanf("%f", nb_adress) != 1)
-    {
-        printf("ERROR : Input failed (expected [%%f])\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-// Scan a string from the default input and exit on failure
-/* RISKY
- * If the string is longer than the memory allowed
- * it will override values in the memory
- */
-static void scan_string(char string[])
-{
-    if (scanf("%s", string) != 1)
-    {
-        printf("ERROR : Input failed (expected a string)\n");
-        exit(EXIT_FAILURE);
-    }
 }
 
 
