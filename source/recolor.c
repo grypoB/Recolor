@@ -35,7 +35,7 @@
 //                    |        number of voisin         |
 #define TAILLE_VOISIN (4*VOISIN_RADIUS*(VOISIN_RADIUS+1)) - MINIMUM_VOISIN + 1
 
-#define UNASSIGNED -1 // a default val until a correct val is assigned
+#define NOT_ASSIGNED -1 // a default val until a correct val is assigned
 
 #define FORMAT_SIZE 3 // expected numbers of characters for the format string
 
@@ -357,14 +357,14 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
         {
             for (j=VOISIN_RADIUS; j<columns-VOISIN_RADIUS ; j++)
             {
-                temp_image[i][j] = UNASSIGNED;
+                temp_image[i][j] = NOT_ASSIGNED;
                 reset_voisin(voisin);
 
                 // cycle through all neighbors
                 for (k=i-VOISIN_RADIUS ; k<=i+VOISIN_RADIUS ; k++)
                 {
                     for (l=j-VOISIN_RADIUS ;
-                         l<=j+VOISIN_RADIUS && temp_image[i][j]==UNASSIGNED ;
+                         l<=j+VOISIN_RADIUS && temp_image[i][j]==NOT_ASSIGNED ;
                          l++)
                     {
                         if (k!=i || l!=j) // if not equal to center pixel
@@ -375,7 +375,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
                     }
                 }
                 // if not decided yet
-                if (temp_image[i][j] == UNASSIGNED)
+                if (temp_image[i][j] == NOT_ASSIGNED)
                 {
                     temp_image[i][j] = DEFAULT_COLOR;
                 }
@@ -402,11 +402,11 @@ static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount)
     int found = 0; // if a place in array as been found
 
     if (ammount == 0)
-        return UNASSIGNED;
+        return NOT_ASSIGNED;
 
     for (i=0 ; i<TAILLE_VOISIN && !found ; i++)
     {
-        if (voisin[i][0] == color || voisin[i][0]==UNASSIGNED)
+        if (voisin[i][0] == color || voisin[i][0]==NOT_ASSIGNED)
         {
             found = 1;
             voisin[i][0] = color;
@@ -419,7 +419,7 @@ static int update_voisin(int voisin[TAILLE_VOISIN][2], int color, int ammount)
     if (!found) // no place left in array, thus no color can be >= MINIMUM_VOISIN
         return DEFAULT_COLOR;
     else // not enough data to decide yet
-        return UNASSIGNED;
+        return NOT_ASSIGNED;
 }
 
 
@@ -430,7 +430,7 @@ static void reset_voisin(int voisin[TAILLE_VOISIN][2])
 
     for (i=0; i<TAILLE_VOISIN ; i++)
     {
-        voisin[i][0] = UNASSIGNED; // set all color to default (-1)
+        voisin[i][0] = NOT_ASSIGNED; // set all color to default (-1)
         voisin[i][1] = 0; // reset all ammounts to 0
     }
 }
