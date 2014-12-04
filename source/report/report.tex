@@ -38,7 +38,8 @@ As seen in the call graph, the concept of re-usage is widly used in the program,
 These are also very abstract as they require pointer on \emph{void} as parameters which is the most general way to allocate memory (instead of using \emph{int*} or \emph{float*}).
 This abstraction is also seen in function set\_border which solve a broader problem as the one we face here : fill a \emph{variable} sized border (not just 1) to a \emph{specified} value (not just 0).
 
-Of course, all the functions in the program are exemple of the concept of abstraction or re-usage.
+But we could tell the same for the functions copy\_2D\_tab and update\_voisin ammong others.
+%Of course, all the functions in the program are exemple of the concept of abstraction or re-usage.
 
 \paragraph{Complexity of the filter algorithm.} The number of operations done (ignoring the ones needed to access a pointer's pointed value, and those for initializing and incrementing a variable in a \emph{for} loop) are:
 \[
