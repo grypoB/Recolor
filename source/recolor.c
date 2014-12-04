@@ -46,11 +46,13 @@
 int verbose = -1;
 
 
-// Read the various input and init corresponding arrays
+// Read the various inputs and init corresponding arrays
+static void    read_verbose(int *verbose_adr);
 static float** read_recoloriage(int *nbR_adr);
-static float*  read_seuils(int size_seuils, int *nb_filtrage_adr);
+static float*  read_seuils(int size_seuils);
 static void    read_image_params(char format[], int *rows_adr, int *columns_adr,
                                  int *intensite_max_adr);
+static void read_filtrage_params(int *nb_filtrage_adr);
 static int**   process_image(int rows, int columns, int size_seuils,
                              float seuils[size_seuils], int intensite_max);
 
@@ -113,11 +115,12 @@ int main(void)
 
     char format[FORMAT_SIZE] = {0};
 
-    scanf("%d", &verbose); // verbose value is assumed correct
 
+    read_verbose(&verbose);
     couleurs = read_recoloriage(&nbR);
-    seuils   = read_seuils(nbR-1, &nbF);
-    read_image_params(format, &rows, &columns, &intensite_max);
+    seuils   = read_seuils(nbR-1);
+    read_filtrage_params(&nbF);
+    read_image_params   (format, &rows, &columns, &intensite_max);
     image    = process_image(rows, columns, nbR-1, seuils, intensite_max);
 
     //* Rendu final
@@ -135,6 +138,12 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 
+
+// read verbose value
+static void read_verbose(int *verbose_adr)
+{
+    scanf("%d", verbose_adr); // verbose value is assumed correct
+}
 
 // read the colors of the "recoloriage"
 // return pointer to 2D array of colors (needs to be freed)
@@ -172,9 +181,8 @@ static float** read_recoloriage(int *nbR_adr)
 
 
 // read the various seuils and check if they are correct
-// also reads the number of filtrage
 // return pointer to array seuils (needs to be freed)
-static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
+static float* read_seuils(int size_seuils)
 {
     int i=0;
     float *seuils = (float*) init_tab(sizeof(float), size_seuils);
@@ -198,12 +206,15 @@ static float* read_seuils(int size_seuils, int *nb_filtrage_adr)
         }
     }
 
-    if (verbose) printf("Entrez le nombre de filtrage :\n");
-    scanf("%d", nb_filtrage_adr); // filtrage nb is assumed correct
-
     return seuils;
 }
 
+// read the number of filtrage
+static void read_filtrage_params(int *nb_filtrage_adr)
+{
+    if (verbose) printf("Entrez le nombre de filtrage :\n");
+    scanf("%d", nb_filtrage_adr); // filtrage nb is assumed correct
+}
 
 // read the image basic parameters
 static void read_image_params(char format[], int *rows_adr, int *columns_adr,
