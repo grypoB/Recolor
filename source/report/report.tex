@@ -2,7 +2,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage {url}
-\usepackage[top=2.2cm, bottom=2.2cm, left=2.54cm, right=2.54cm]{geometry} % set margin
+\usepackage[top=2.0cm, bottom=2.0cm, left=2.54cm, right=2.54cm]{geometry} % set margin
 \usepackage{amsfonts} % for set names
 \usepackage{amsmath} % for equation system
 \usepackage{amsthm} % for theorem block
@@ -27,19 +27,20 @@
 %\section*{Autumn programming project : Recolor}
 The program's organisation is as follows :
 \begin{enumerate}
-\item Read the inputs (and perform tests) : 3 functions which each read a specific chunk (i.e.: all thresholds together) and dynamically allocate memory for the arrays which are latter freed in main
+\item Read the inputs (and perform tests) : 5 functions which each read a specific chunk (e.g.: all thresholds together) and dynamically allocate memory for the arrays which are latter freed in main
 
-\item Process the inputs : convert the image into greyscale and compare it to the thresholds (2 functions), then filter image (1 function which uses 6 others)
+\item Process the inputs : convert the image into greyscale and compare it to the thresholds (2 functions), then filter image
+(1 function which uses 6 others which do very simple tasks (e.g.: reset/copy arrays)
 
 \item Print the output (a single function does this job)
 \end{enumerate}
 
-As seen in the call graph, the concept of re-usage is widly used in the program, essentially with functions that dynamically allocate memory for arrays (and free them).
-These are also very abstract as they require pointer on \emph{void} as parameters which is the most general way to allocate memory (instead of using \emph{int*} or \emph{float*}).
-This abstraction is also seen in function set\_border which solve a broader problem as the one we face here : fill a \emph{variable} sized border (not just 1) to a \emph{specified} value (not just 0).
+As seen in the call graph, the concept of \emph{re-usage} is widly used in the program, 
+the recursive function seuillage (inspired of binary search) is one example.
+But the functions that dynamically allocate memory for arrays (and free them) are even better ones.
 
-But we could tell the same for the functions copy\_2D\_tab and update\_voisin ammong others.
-%Of course, all the functions in the program are exemple of the concept of abstraction or re-usage.
+These last functions are also very \emph{abstract} as they take pointer on \emph{void} as parameters which is a very general way to allocate memory (instead of using \emph{int*} or \emph{float*}).
+This abstraction is also seen  (but not only) in function set\_border which solve a broader problem than the one we face here : fill a \emph{variable} sized border (not just 1) to a \emph{specified} value (not just 0).
 
 \paragraph{Complexity of the filter algorithm.} The number of operations done (ignoring the ones needed to access a pointer's pointed value, and those for initializing and incrementing a variable in a \emph{for} loop) are:
 \[
