@@ -22,26 +22,29 @@
 \fancyfoot[R]{\thepage\ of \pageref{lastpage}}
 
 \begin{document}
+\SetEndCharOfAlgoLine{}
 
 %\section*{Autumn programming project : Recolor}
 The program's organisation is as follows :
 \begin{enumerate}
-\item Read the inputs (and perform tests) : 3 functions which read a specific chunk (i.e.: all thresholds together) and dynamically allocate memory for the arrays which are later freed in main
+\item Read the inputs (and perform tests) : 3 functions which each read a specific chunk (i.e.: all thresholds together) and dynamically allocate memory for the arrays which are latter freed in main
 
 \item Process the inputs : convert the image into greyscale and compare it to the thresholds (2 functions), then filter image (1 function which uses 6 others)
 
 \item Print the output (a single function does this job)
 \end{enumerate}
 
-As seen in the call graph, the concept of reutilisation is widly used in the program, essentially with functions that dynamicly allocate memory for arrays (and free them).
-These are also very abstract as they require pointer on \emph{void} as parameters which is the most general way to solve this problem (instead of using \emph{int*} or \emph{float*}).
+As seen in the call graph, the concept of re-usage is widly used in the program, essentially with functions that dynamically allocate memory for arrays (and free them).
+These are also very abstract as they require pointer on \emph{void} as parameters which is the most general way to allocate memory (instead of using \emph{int*} or \emph{float*}).
 This abstraction is also seen in function set\_border which solve a broader problem as the one we face here : fill a \emph{variable} sized border (not just 1) to a \emph{specified} value (not just 0).
 
-Of course, all the functions in the program are exemple of the concept of abstraction or reutilisation.
+Of course, all the functions in the program are exemple of the concept of abstraction or re-usage.
 
 \paragraph{Complexity of the filter algorithm.} The number of operations done (ignoring the ones needed to access a pointer's pointed value, and those for initializing and incrementing a variable in a \emph{for} loop) are:
 \[
-\underbrace{8 + r + 2 \times r + 2 \times c }_{\text{initialization}}
+\underbrace{11 + 1 + r }_{\text{initialization}}
++
+\underbrace{2 \times r + 2 \times c }_{\text{set\_border}} 
 +
 \underbrace{ f \times ( r \times c }_{\text{\emph{for} loops}}
 \times ( 
@@ -57,7 +60,7 @@ Where $r$ the numbers of rows of the image, $c$ the columns, $f$ the numbers of 
 
 Thus 
 $\mathcal{O}(f \times r \times c \times n \times t)$ or more simply 
-$\mathcal{O}(f \times r \times c)$ because $n$ and $t$ are predefined constant.
+$\mathcal{O}(f \times r \times c)$ because $n$ and $t$ are predefined constants.
 
 
 
@@ -75,11 +78,11 @@ $\mathcal{O}(f \times r \times c)$ because $n$ and $t$ are predefined constant.
             Reset $T$ (remove all elements)\;
             \For{each $neighbor$ of $pixel$} {
                 \If{$resultColor = $ NULL} {
-                    $resultColor \leftarrow $ \emph{insertInSet}($neighbor$, $T$)\; 
+                    $resultColor \leftarrow $ \emph{insertInSet}($neighbor$'s color, $T$)\; 
                 }
             }
             \If{$resultColor = $ NULL} {
-                $resultColor \leftarrow$ black \;
+                $resultColor \leftarrow$ black\;
             }
             Set corresponding $pixel$ of $temp$ to $resultColor$\; 
         }
