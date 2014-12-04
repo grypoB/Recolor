@@ -357,7 +357,8 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 
     // store in each row a neighboring color and the ammount of it
     int voisin[TAILLE_VOISIN][2] = {{0}};
-    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns); // buffer image
+    // buffer image
+    int **temp_image = (int**) init_2D_tab(sizeof(int), rows, columns);
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
         set_border(rows, columns, temp_image, DEFAULT_COLOR, VOISIN_RADIUS);
@@ -448,7 +449,8 @@ static void reset_voisin(int voisin[TAILLE_VOISIN][2])
 
 
 // set the border of an array to a val
-static void set_border(int rows, int columns, int *tab[rows], int val, int border_size)
+static void set_border(int rows, int columns, int *tab[rows],
+                       int val, int border_size)
 {
     int i, j;
 
