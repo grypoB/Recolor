@@ -350,7 +350,7 @@ static void filtrage(int rows, int columns, int *image[rows], int nb_filtrage)
 
     if (nb_filtrage>=1) // set border to DEFAULT_COLOR
         set_border(rows, columns, temp_image, DEFAULT_COLOR, VOISIN_RADIUS);
-    for (countF=0; countF<nb_filtrage ; countF++)
+    for (countF=0 ; countF<nb_filtrage ; countF++)
     {
         // cycle through all pixels (border excepted)
         for (i=VOISIN_RADIUS; i<rows-VOISIN_RADIUS ; i++)
